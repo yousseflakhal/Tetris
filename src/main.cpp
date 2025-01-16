@@ -2,6 +2,8 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include "Shape.hpp"
 
 using namespace std;
 
@@ -10,6 +12,40 @@ const int OFFSET = 50;
 const int WIDTH = 600;
 const int HEIGHT = 1000;
 const int SPEED = 100; // Milliseconds delay between steps
+
+bool operator==(const SDL_Rect& a, const SDL_Rect& b) {
+    return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+}
+
+pair<int,int>& mostLeft(vector<pair<int, int>>& list){
+    auto& result = list[0];
+    for(const auto& p:list){
+        if(result.first>p.first){
+            result = p;
+        }
+    }
+    return result;
+}
+
+pair<int,int>& mostRight(vector<pair<int, int>>& list){
+    auto& result = list[0];
+    for(const auto& p:list){
+        if(result.first<p.first){
+            result = p;
+        }
+    }
+    return result;
+}
+
+pair<int,int> mostDown(vector<pair<int, int>>& list){
+    auto result = list[0];
+    for(const auto& p:list){
+        if(result.second<p.second){
+            result = p;
+        }
+    }
+    return result;
+}
 
 int main() {
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
@@ -37,20 +73,19 @@ int main() {
     SDL_Rect outerRect = {OFFSET, OFFSET, WIDTH - 2 * OFFSET, HEIGHT - 2 * OFFSET};
     SDL_RenderDrawRect(renderer, &outerRect);
 
-    // Initial position of the moving rectangle
-    vector<SDL_Rect> rects;
-    rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-
     SDL_RenderPresent(renderer);
+
+    vector<Shape> rects;
+    rects.push_back(Shape {renderer});
+    rects.back().display();
 
     bool quit = false;
     SDL_Event event;
 
-    Uint32 lastMoveTime = SDL_GetTicks(); // Timer to manage movement speed
+    Uint32 lastMoveTime = SDL_GetTicks();
 
     // Initialize board with zeros
     vector<vector<int>> board((HEIGHT - 2 * OFFSET) / CELL_SIZE + 1, vector<int>((WIDTH - 2 * OFFSET) / CELL_SIZE, 0));
-    int x = 4, y = 1; // Initial position on the board
 
     // Game loop
     while (!quit) {
@@ -63,27 +98,13 @@ int main() {
             if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_LEFT:
-                        if (x > 0 && board[y][x - 1] == 0) { // Move left if within bounds and not occupied
-                            rects.back().x -= CELL_SIZE;
-                            x--;
+                        if (mostLeft(rects.back().coords).first > 0 && board[mostLeft(rects.back().coords).second][mostLeft(rects.back().coords).first - 1] == 0) { // Move left if within bounds and not occupied
+                            rects.back().updateLeft();
                         }
                         break;
                     case SDLK_RIGHT:
-                        if (x <= WIDTH / CELL_SIZE && board[y][x + 1] == 0) { // Move right
-                            rects.back().x += CELL_SIZE;
-                            x++;
-                        }
-                        break;
-                    case SDLK_DOWN:
-                        if (y < HEIGHT / CELL_SIZE - 2 && board[y + 1][x] == 0) { // Move down
-                            rects.back().y += CELL_SIZE;
-                            y++;
-                        } else {
-                            // Piece reaches bottom or another piece
-                            board[y][x] = 1;
-                            rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-                            x = 5;
-                            y = 1;
+                        if (mostRight(rects.back().coords).first <= WIDTH / CELL_SIZE && board[mostRight(rects.back().coords).second][mostRight(rects.back().coords).first + 1] == 0) { // Move right
+                            rects.back().updateRight();
                         }
                         break;
                     default:
@@ -91,55 +112,74 @@ int main() {
                 }
             }
         }
-        for(int i=0; i < board.size();i++){
+        int i = board.size()-1;
+        
+        while(i >=0){
             if (board[i]==vector<int>((WIDTH - (2 * OFFSET) ) / CELL_SIZE,1)){
-                y++;
                 board.erase(board.begin()+i);
                 board.emplace(board.begin(),vector<int>((WIDTH - 2 * OFFSET ) / CELL_SIZE,0));
+                for(auto& y:board){
+                    for(auto x:y){
+                        cout << x << " ";
+                    }
+                    cout << endl;
+                }
                 auto it = rects.begin();
                 while(it!= rects.end()){
-                    if((*it).y / CELL_SIZE == i){
-                        rects.erase(it);
-                        continue;
+                    for(auto& s:(*it).shape_rects){
+                        if((s.y) / CELL_SIZE == i){
+                            (*it).shape_rects.erase(find((*it).shape_rects.begin(),(*it).shape_rects.end(),s));
+                            (*it).coords.erase(find((*it).coords.begin(),(*it).coords.end(),make_pair(s.x/CELL_SIZE - 1, ((s.y - OFFSET) / CELL_SIZE) + 1)));
+                        }
                     }
                     ++it;
                 }
-                // for(auto r:board){
-                //     for(auto e:r){
-                //         cout << e << " ";
-                //     }
-                //     cout << endl;
-                // }
-                // cout << "**************" << endl;
-                for(auto& r:rects){
-                    r.y+= CELL_SIZE;
+                for(auto r = rects.begin(); r != prev(rects.end()); ++r){
+                    for(auto& s:r->shape_rects){
+                        if(s.y/CELL_SIZE<i){
+                            s.y+= CELL_SIZE;
+                        }
+                    }
                 }
-                
+            }else{
+                i--;
             }
+            
         }
-        // for(auto r:board){
-        //     for(auto e:r){
-        //         cout << e << " ";
-        //     }
-        //     cout << endl;
-        // }
-        // for(auto r:rects){
-        //     cout << r.y << endl;
-        // }
 
         // Automatic downward movement
         Uint32 currentTime = SDL_GetTicks();
         if (currentTime > lastMoveTime + SPEED) {
-            if (y < HEIGHT / CELL_SIZE - 2 && board[y + 1][x] == 0) {
-                rects.back().y += CELL_SIZE;
-                y++;
-            } else {
-                // Piece reaches bottom or another piece
-                board[y][x] = 1;
-
-                rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-                x = 4;
-                y = 1;
+            bool collision = false;
+            for(auto& coord:rects.back().coords){
+                cout << coord.first << " " << coord.second << endl;
+            }
+            if(mostDown(rects.back().coords).second < 18){
+                for(auto& coord:rects.back().coords){
+                    if (board[coord.second + 1][coord.first] == 1){
+                        for(auto& y:board){
+                            for(auto x:y){
+                                cout << x << " ";
+                            }
+                            cout << endl;
+                        }
+                        collision = true;
+                        for(auto& coord:rects.back().coords){
+                            board[coord.second][coord.first] = 1;
+                        }
+                        rects.push_back(Shape {renderer});
+                        break;
+                    }
+                }
+            }else{
+                collision = true;
+                for(auto& coord:rects.back().coords){
+                    board[coord.second][coord.first] = 1;
+                }
+                rects.push_back(Shape {renderer});
+            }
+            if(!collision){
+                rects.back().updateDown();
             }
             lastMoveTime = currentTime;
         }
@@ -155,8 +195,11 @@ int main() {
         // Draw all rectangles
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         for (const auto& rect : rects) {
-            SDL_RenderFillRect(renderer, &rect);
-            SDL_RenderDrawRect(renderer, &rect);
+            for(const auto& r : rect.shape_rects){
+                SDL_RenderFillRect(renderer, &r);
+                SDL_RenderDrawRect(renderer, &r);
+            }
+            
         }
 
         SDL_RenderPresent(renderer);
