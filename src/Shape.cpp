@@ -1,95 +1,94 @@
 #include "Shape.hpp"
 using namespace std;
 
-// Global random generator and distribution
-random_device rd;                      // Non-deterministic random device
-mt19937 gen(rd());                     // Mersenne Twister engine
-uniform_int_distribution<> dis(0, 6); // Range [0, 6]
-
-Shape::Shape(SDL_Renderer* renderer): renderer{renderer}{
-    int random_value = dis(gen);
-    actual_shape = random_value;
-    switch(static_cast<Shapes>(actual_shape)){
-        case Shapes::O:
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
+Shape::Shape(Type type, int startX, int startY, SDL_Color color)
+    : type(type), color(color), rotationState(0) {
+    switch (type) {
+        case Type::O:
+            coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX + 1, startY + 1}};
             break;
-        case Shapes::I:
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{4 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{3 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
+        case Type::I:
+            coords = {{startX, startY}, {startX - 1, startY}, {startX + 1, startY}, {startX + 2, startY}};
             break;
-        case Shapes::S:
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{4 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
+        case Type::S:
+            coords = {{startX, startY}, {startX - 1, startY}, {startX, startY + 1}, {startX + 1, startY + 1}};
             break;
-        case Shapes::Z:
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{4 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
+        case Type::Z:
+            coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX - 1, startY + 1}};
             break;
-        case Shapes::L:
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + 2 * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET + 2 * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
+        case Type::L:
+            coords = {{startX, startY}, {startX, startY + 1}, {startX, startY + 2}, {startX + 1, startY + 2}};
             break;
-        case Shapes::J:
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET + 2 * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + 2 * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
+        case Type::J:
+            coords = {{startX, startY}, {startX, startY + 1}, {startX, startY + 2}, {startX - 1, startY + 2}};
             break;
-        case Shapes::T:
-            shape_rects.push_back(SDL_Rect{6 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{4 * CELL_SIZE, OFFSET, CELL_SIZE - 1, CELL_SIZE - 1});
-            shape_rects.push_back(SDL_Rect{5 * CELL_SIZE, OFFSET + CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1});
-            break;
-    }
-    for(auto& rect:shape_rects){
-        coords.push_back(make_pair(rect.x/CELL_SIZE - 1, ((rect.y - OFFSET) / CELL_SIZE) + 1));
+        case Type::T:
+            coords = {{startX, startY}, {startX - 1, startY + 1}, {startX, startY + 1}, {startX + 1, startY + 1}};
+            break; 
     }
 }
 
-void Shape::display(){
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        for (const auto& rect : shape_rects) {
-            SDL_RenderFillRect(renderer, &rect);
-            SDL_RenderDrawRect(renderer, &rect);
+void Shape::moveDown() {
+    for (auto& coord : coords) {
+        coord.second += 1;
+    }
+}
+
+void Shape::moveLeft() {
+    for (auto& coord : coords) {
+        coord.first -= 1;
+    }
+}
+
+void Shape::moveRight() {
+    for (auto& coord : coords) {
+        coord.first += 1;
+    }
+}
+
+void Shape::rotateClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight) {
+    if (type == Type::O) {
+        return;
+    }
+
+    rotateShape(1);
+    if (!isValidPosition(board, boardWidth, boardHeight)) {
+        rotateShape(-1);
+    }
+}
+
+void Shape::rotateShape(int direction) {
+    auto pivot = coords[0];
+    for (auto& coord : coords) {
+        int x = coord.first - pivot.first;
+        int y = coord.second - pivot.second;
+        coord.first = pivot.first - direction * y;
+        coord.second = pivot.second + direction * x;
+    }
+    rotationState = (rotationState + direction + 4) % 4;
+}
+
+bool Shape::isValidPosition(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight) const {
+    for (const auto& coord : coords) {
+        int x = coord.first;
+        int y = coord.second;
+        if (x < 0 || x >= boardWidth || y >= boardHeight || board[y][x] != 0) {
+            return false;
         }
+    }
+    return true;
 }
 
-void Shape::updateDown(){
-    for(auto& rect:shape_rects){
-        rect.y+= CELL_SIZE;
-    }
-    for(auto& coord:coords){
-        ++coord.second;
-    }
-}
 
-void Shape::updateLeft(){
-    for(auto& rect:shape_rects){
-        rect.x-= CELL_SIZE;
-    }
-    for(auto& coord:coords){
-        --coord.first;
+void Shape::draw(SDL_Renderer* renderer, int cellSize) const {
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    for (const auto& coord : coords) {
+        SDL_Rect rect = {coord.first * cellSize, coord.second * cellSize, cellSize - 1, cellSize - 1};
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderDrawRect(renderer, &rect);
     }
 }
 
-void Shape::updateRight(){
-    for(auto& rect:shape_rects){
-        rect.x+= CELL_SIZE;
-    }
-    for(auto& coord:coords){
-        ++coord.first;
-    }
+const std::vector<std::pair<int, int>>& Shape::getCoords() const {
+    return coords;
 }
-

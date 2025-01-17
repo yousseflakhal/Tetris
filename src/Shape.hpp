@@ -1,24 +1,32 @@
 #pragma once
-#include <iostream>
-#include <SDL2/SDL.h>
 #include <vector>
-#include <random>
+#include <SDL2/SDL.h>
 
-using namespace std;
+class Shape {
+public:
+    enum class Type { O, I, S, Z, L, J, T };
 
-extern const int CELL_SIZE;
-extern const int OFFSET;
+    Shape(Type type, int startX, int startY, SDL_Color color);
 
-class Shape{
-    public:
-    SDL_Renderer* renderer;
-    enum class Shapes {O,I,S,Z,L,J,T};
-    int actual_shape;
-    vector<pair<int,int>> coords;
-    vector<SDL_Rect> shape_rects;
-    Shape(SDL_Renderer* renderer);
-    void display();
-    void updateDown();
-    void updateLeft();
-    void updateRight();
+    // Movement
+    void moveDown();
+    void moveLeft();
+    void moveRight();
+
+    // Rotation
+    void rotateClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight);
+    void rotateCounterClockwise(const std::vector<int>& board, int boardWidth, int boardHeight);
+
+    const std::vector<std::pair<int, int>>& getCoords() const;
+    SDL_Color getColor() const;
+
+    void draw(SDL_Renderer* renderer, int cellSize) const;
+
+private:
+    Type type;
+    std::vector<std::pair<int, int>> coords;
+    SDL_Color color;
+    int rotationState;
+    void rotateShape(int direction);
+    bool isValidPosition(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight) const;
 };
