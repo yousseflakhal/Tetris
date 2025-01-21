@@ -1,0 +1,11 @@
+
+build/
+*.o
+*.exe
+*.out
+
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+*.log
+*.tmp
