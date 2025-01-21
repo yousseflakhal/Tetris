@@ -124,8 +124,12 @@ void Game::spawnNewShape() {
 
     currentShape = Shape(type, board.getCols() / 2, 0, randomColor);
 
-    if (board.isOccupied(currentShape.getCoords(), 0, 0)) {
+    if (isGameOver()) {
         std::cout << "Game Over! Cannot place the new shape." << std::endl;
         running = false;
     }
+}
+
+bool Game::isGameOver() const {
+    return board.isOccupied(currentShape.getCoords(), 0, 0);
 }

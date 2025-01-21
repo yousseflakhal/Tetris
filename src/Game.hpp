@@ -30,10 +30,9 @@ private:
     Uint32 lastMoveTime;
     const int speed;
 
-    // Private methods
     void processInput();
     void update();
     void render();
     void spawnNewShape();
-    bool isGameOver() const; //TODO 
+    bool isGameOver() const;
 };
