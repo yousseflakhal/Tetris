@@ -9,3 +9,5 @@ CMakeCache.txt
 *.cmake
 *.log
 *.tmp
+
+.vscode/
