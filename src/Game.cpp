@@ -115,14 +115,7 @@ void Game::render() {
 
 void Game::spawnNewShape() {
     Shape::Type type = static_cast<Shape::Type>(rand() % 7);
-    SDL_Color randomColor = {
-        static_cast<Uint8>(rand() % 256),
-        static_cast<Uint8>(rand() % 256),
-        static_cast<Uint8>(rand() % 256),
-        255
-    };
-
-    currentShape = Shape(type, board.getCols() / 2, 0, randomColor);
+    currentShape = Shape(type, board.getCols() / 2, 0, {0, 0, 0, 255});
 
     if (isGameOver()) {
         std::cout << "Game Over! Cannot place the new shape." << std::endl;

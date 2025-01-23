@@ -3,6 +3,16 @@ using namespace std;
 
 Shape::Shape(Type type, int startX, int startY, SDL_Color color)
     : type(type), color(color), rotationState(0) {
+    static const std::unordered_map<Type, SDL_Color> shapeColors = {
+    {Type::O, {255, 215, 0, 255}},
+    {Type::I, {0, 255, 255, 255}},
+    {Type::S, {0, 255, 0, 255}},
+    {Type::Z, {255, 0, 0, 255}},
+    {Type::L, {255, 140, 0, 255}},
+    {Type::J, {0, 0, 255, 255}},
+    {Type::T, {128, 0, 128, 255}}
+    };
+    this->color = shapeColors.at(type);
     switch (type) {
         case Type::O:
             coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX + 1, startY + 1}};

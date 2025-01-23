@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <SDL2/SDL.h>
+#include <unordered_map>
 
 class Shape {
 public:
