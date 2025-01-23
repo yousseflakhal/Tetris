@@ -40,49 +40,55 @@ void Game::run() {
 }
 
 void Game::processInput() {
+    SDL_Event event;
+    static std::unordered_map<SDL_Keycode, bool> keyState;
+
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            running = false;
+            return;
+        }
+
+        if (event.type == SDL_KEYDOWN) {
+            keyState[event.key.keysym.sym] = true;
+        } else if (event.type == SDL_KEYUP) {
+            keyState[event.key.keysym.sym] = false;
+        }
+    }
+
     Uint32 currentTime = SDL_GetTicks();
 
-    
-    inputHandler.handleInput();
-
-    
-    if (inputHandler.isQuitRequested()) {
+    if (keyState[SDLK_ESCAPE]) {
         running = false;
         return;
     }
 
-    // Handle left movement
-    if (inputHandler.isKeyPressed(SDLK_LEFT)) {
-        if (currentTime - lastHorizontalMoveTime >= horizontalMoveDelay &&
-            !board.isOccupied(currentShape.getCoords(), -1, 0)) {
-            currentShape.moveLeft();
-            lastHorizontalMoveTime = currentTime;
-        }
+    if (keyState[SDLK_LEFT] && currentTime - lastHorizontalMoveTime >= horizontalMoveDelay &&
+        !board.isOccupied(currentShape.getCoords(), -1, 0)) {
+        currentShape.moveLeft();
+        lastHorizontalMoveTime = currentTime;
     }
 
-    
-    if (inputHandler.isKeyPressed(SDLK_RIGHT)) {
-        if (currentTime - lastHorizontalMoveTime >= horizontalMoveDelay &&
-            !board.isOccupied(currentShape.getCoords(), 1, 0)) {
-            currentShape.moveRight();
-            lastHorizontalMoveTime = currentTime;
-        }
+    if (keyState[SDLK_RIGHT] && currentTime - lastHorizontalMoveTime >= horizontalMoveDelay &&
+        !board.isOccupied(currentShape.getCoords(), 1, 0)) {
+        currentShape.moveRight();
+        lastHorizontalMoveTime = currentTime;
     }
 
-    
-    if (inputHandler.isKeyPressed(SDLK_DOWN)) {
-        if (currentTime - lastDownMoveTime >= downMoveDelay &&
-            !board.isOccupied(currentShape.getCoords(), 0, 1)) {
-            currentShape.moveDown();
-            lastDownMoveTime = currentTime;
-        }
+    if (keyState[SDLK_DOWN] && currentTime - lastDownMoveTime >= downMoveDelay &&
+        !board.isOccupied(currentShape.getCoords(), 0, 1)) {
+        currentShape.moveDown();
+        lastDownMoveTime = currentTime;
     }
+    static bool rotationKeyHandled = false;
 
-    if (inputHandler.isKeyPressed(SDLK_UP)) {
-        if (currentTime - lastRotationTime >= rotationDelay) {
+    if (keyState[SDLK_UP]) {
+        if (!rotationKeyHandled) {
             currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
-            lastRotationTime = currentTime;
+            rotationKeyHandled = true;
         }
+    } else {
+        rotationKeyHandled = false;
     }
 }
 
