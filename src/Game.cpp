@@ -3,7 +3,7 @@
 
 Game::Game(int width, int height, int cellSize)
     : board(height / cellSize, width / cellSize, cellSize, {0, 0, 255, 255}),
-      currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 0, 0, 255}),
+      currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       running(true),
       lastMoveTime(SDL_GetTicks()),
       speed(500)
@@ -22,6 +22,10 @@ Game::Game(int width, int height, int cellSize)
     if (!renderer) {
         throw std::runtime_error("Failed to create renderer");
     }
+
+    srand(time(nullptr));
+
+    spawnNewShape();
 }
 
 Game::~Game() {
