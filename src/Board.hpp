@@ -25,4 +25,5 @@ private:
     int rows, cols, cellSize;
     SDL_Color backgroundColor;
     std::vector<std::vector<int>> grid;
+    std::vector<std::vector<SDL_Color>> colorGrid;
 };

@@ -9,19 +9,19 @@ public:
 
     Shape(Type type, int startX, int startY, SDL_Color color);
 
-    // Movement
     void moveDown();
     void moveLeft();
     void moveRight();
 
-    // Rotation
     void rotateClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight);
     void rotateCounterClockwise(const std::vector<int>& board, int boardWidth, int boardHeight);
 
     const std::vector<std::pair<int, int>>& getCoords() const;
-    SDL_Color getColor() const;
+    SDL_Color getColor() const { return color; }
 
     void draw(SDL_Renderer* renderer, int cellSize) const;
+    
+    
 
 private:
     Type type;
