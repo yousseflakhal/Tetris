@@ -2,7 +2,7 @@
 
 
 Game::Game(int width, int height, int cellSize)
-    : board(height / cellSize, width / cellSize, cellSize, {0, 0, 255, 255}),
+    : board(height / cellSize, width / cellSize, cellSize,  {0, 0, 0, 255}),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       running(true),
       lastMoveTime(SDL_GetTicks()),

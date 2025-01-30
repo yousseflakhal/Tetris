@@ -52,10 +52,18 @@ void Board::clearFullLines() {
 }
 
 void Board::draw(SDL_Renderer* renderer) const {
-    SDL_SetRenderDrawColor(renderer, backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_Rect rect = {0, 0, cols * cellSize, rows * cellSize};
     SDL_RenderFillRect(renderer, &rect);
 
+
+    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
+    for (int x = 0; x <= cols; ++x) {
+        SDL_RenderDrawLine(renderer, x * cellSize, 0, x * cellSize, rows * cellSize);
+    }
+    for (int y = 0; y <= rows; ++y) {
+        SDL_RenderDrawLine(renderer, 0, y * cellSize, cols * cellSize, y * cellSize);
+    }
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
             if (grid[y][x] != 0) {

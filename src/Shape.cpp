@@ -93,9 +93,8 @@ bool Shape::isValidPosition(const std::vector<std::vector<int>>& board, int boar
 void Shape::draw(SDL_Renderer* renderer, int cellSize) const {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     for (const auto& coord : coords) {
-        SDL_Rect rect = {coord.first * cellSize, coord.second * cellSize, cellSize - 1, cellSize - 1};
+        SDL_Rect rect = {coord.first * cellSize + 1, coord.second * cellSize + 1, cellSize - 1, cellSize - 1};
         SDL_RenderFillRect(renderer, &rect);
-        SDL_RenderDrawRect(renderer, &rect);
     }
 }
 
