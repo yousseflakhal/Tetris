@@ -2,11 +2,18 @@
 
 
 Game::Game(int width, int height, int cellSize)
-    : board(height / cellSize, width / cellSize, cellSize,  {0, 0, 0, 255}),
+    : board(height / cellSize, width / cellSize, cellSize, {0, 0, 255, 255}),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       running(true),
       lastMoveTime(SDL_GetTicks()),
-      speed(500)
+      speed(500),
+      cellSize(cellSize),
+      lastHorizontalMoveTime(0),
+      lastDownMoveTime(0),
+      lastRotationTime(0),
+      horizontalMoveDelay(50),
+      downMoveDelay(100),
+      rotationDelay(100)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -44,58 +51,65 @@ void Game::run() {
 }
 
 void Game::processInput() {
-    SDL_Event event;
-    static std::unordered_map<SDL_Keycode, bool> keyState;
+    inputHandler.handleInput();
 
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
-            running = false;
-            return;
-        }
-
-        if (event.type == SDL_KEYDOWN) {
-            keyState[event.key.keysym.sym] = true;
-        } else if (event.type == SDL_KEYUP) {
-            keyState[event.key.keysym.sym] = false;
-        }
-    }
-
-    Uint32 currentTime = SDL_GetTicks();
-
-    if (keyState[SDLK_ESCAPE]) {
+    if (inputHandler.isQuitRequested()) {
         running = false;
         return;
     }
 
-    if (keyState[SDLK_LEFT] && currentTime - lastHorizontalMoveTime >= horizontalMoveDelay &&
-        !board.isOccupied(currentShape.getCoords(), -1, 0)) {
-        currentShape.moveLeft();
-        lastHorizontalMoveTime = currentTime;
+    if (inputHandler.isKeyPressed(SDLK_ESCAPE)) {
+        running = false;
+        return;
     }
 
-    if (keyState[SDLK_RIGHT] && currentTime - lastHorizontalMoveTime >= horizontalMoveDelay &&
-        !board.isOccupied(currentShape.getCoords(), 1, 0)) {
-        currentShape.moveRight();
-        lastHorizontalMoveTime = currentTime;
+    int mouseX = inputHandler.getMouseX();
+    int targetGridX = mouseX / cellSize;
+    targetGridX = std::max(0, std::min(targetGridX, board.getCols() - 1));
+
+    int currentX = currentShape.getCoords()[0].first;
+    Uint32 currentTime = SDL_GetTicks();
+
+    if (currentTime - lastHorizontalMoveTime >= horizontalMoveDelay) {
+        if (targetGridX > currentX) {
+            if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                currentShape.moveRight(board.getCols());
+                lastHorizontalMoveTime = currentTime;
+            }
+        } else if (targetGridX < currentX) {
+            if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                currentShape.moveLeft(board.getCols());
+                lastHorizontalMoveTime = currentTime;
+            }
+        }
     }
 
-    if (keyState[SDLK_DOWN] && currentTime - lastDownMoveTime >= downMoveDelay &&
-        !board.isOccupied(currentShape.getCoords(), 0, 1)) {
-        currentShape.moveDown();
-        lastDownMoveTime = currentTime;
+    if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
+        if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+            currentShape.moveDown();
+            lastDownMoveTime = currentTime;
+        }
     }
     static bool rotationKeyHandled = false;
 
-    if (keyState[SDLK_UP]) {
-        if (!rotationKeyHandled) {
+    if (inputHandler.isKeyJustPressed(SDLK_UP)) {
+        if(!rotationKeyHandled){
             currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
             rotationKeyHandled = true;
-        }
-    } else {
+        }    
+    }else {
         rotationKeyHandled = false;
     }
-}
 
+    if (inputHandler.isMouseClicked()) {
+        while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+            currentShape.moveDown();
+        }
+        board.placeShape(currentShape);
+        board.clearFullLines();
+        spawnNewShape();
+    }
+}
 
 void Game::update() {
     Uint32 currentTime = SDL_GetTicks();

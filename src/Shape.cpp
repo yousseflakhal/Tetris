@@ -44,13 +44,19 @@ void Shape::moveDown() {
     }
 }
 
-void Shape::moveLeft() {
+void Shape::moveLeft(int boardWidth) {
+    for (const auto& coord : coords) {
+        if (coord.first - 1 < 0) return;
+    }
     for (auto& coord : coords) {
         coord.first -= 1;
     }
 }
 
-void Shape::moveRight() {
+void Shape::moveRight(int boardWidth) {
+    for (const auto& coord : coords) {
+        if (coord.first + 1 >= boardWidth) return;
+    }
     for (auto& coord : coords) {
         coord.first += 1;
     }

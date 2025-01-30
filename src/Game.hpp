@@ -4,13 +4,6 @@
 #include "Shape.hpp"
 #include "InputHandler.hpp"
 
-Uint32 lastHorizontalMoveTime = 0;
-const Uint32 horizontalMoveDelay = 150;
-Uint32 lastDownMoveTime = 0;
-Uint32 lastRotationTime = 0;
-const Uint32 downMoveDelay = 100;
-const Uint32 rotationDelay = 100;
-
 class Game {
 public:
     Game(int width, int height, int cellSize);
@@ -29,6 +22,13 @@ private:
     bool running;
     Uint32 lastMoveTime;
     const int speed;
+    int cellSize;
+    Uint32 lastHorizontalMoveTime;
+    Uint32 lastDownMoveTime;
+    Uint32 lastRotationTime;
+    const Uint32 horizontalMoveDelay;
+    const Uint32 downMoveDelay;
+    const Uint32 rotationDelay;
 
     void processInput();
     void update();
