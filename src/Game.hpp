@@ -30,6 +30,8 @@ private:
     const Uint32 downMoveDelay;
     const Uint32 rotationDelay;
 
+    Shape shadowShape;
+
     void processInput();
     void update();
     void render();

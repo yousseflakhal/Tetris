@@ -4,6 +4,7 @@
 Game::Game(int width, int height, int cellSize)
     : board(height / cellSize, width / cellSize, cellSize, {0, 0, 255, 255}),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
+      shadowShape(currentShape),
       running(true),
       lastMoveTime(SDL_GetTicks()),
       speed(500),
@@ -150,6 +151,11 @@ void Game::update() {
         }
         lastMoveTime = currentTime;
     }
+
+    shadowShape = currentShape;
+    while (!board.isOccupied(shadowShape.getCoords(), 0, 1)) {
+        shadowShape.moveDown();
+    }
 }
 
 
@@ -159,8 +165,8 @@ void Game::render() {
     SDL_RenderClear(renderer);
 
     board.draw(renderer);
+    shadowShape.draw(renderer, board.getCellSize(), true);
     currentShape.draw(renderer, board.getCellSize());
-
     SDL_RenderPresent(renderer);
 }
 

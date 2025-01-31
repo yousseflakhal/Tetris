@@ -96,11 +96,24 @@ bool Shape::isValidPosition(const std::vector<std::vector<int>>& board, int boar
 }
 
 
-void Shape::draw(SDL_Renderer* renderer, int cellSize) const {
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    for (const auto& coord : coords) {
-        SDL_Rect rect = {coord.first * cellSize + 1, coord.second * cellSize + 1, cellSize - 1, cellSize - 1};
-        SDL_RenderFillRect(renderer, &rect);
+void Shape::draw(SDL_Renderer* renderer, int cellSize, bool isShadow) const {
+    SDL_Color drawColor = color;
+
+    if (isShadow) {
+        drawColor.a = 100;
+        SDL_SetRenderDrawColor(renderer, drawColor.r, drawColor.g, drawColor.b, drawColor.a);
+        
+        for (const auto& coord : coords) {
+            SDL_Rect rect = {coord.first * cellSize + 1, coord.second * cellSize + 1, cellSize - 1, cellSize - 1};
+            SDL_RenderDrawRect(renderer, &rect);
+        }
+    } else {
+        SDL_SetRenderDrawColor(renderer, drawColor.r, drawColor.g, drawColor.b, drawColor.a);
+        
+        for (const auto& coord : coords) {
+            SDL_Rect rect = {coord.first * cellSize + 1, coord.second * cellSize + 1, cellSize - 1, cellSize - 1};
+            SDL_RenderFillRect(renderer, &rect);
+        }
     }
 }
 

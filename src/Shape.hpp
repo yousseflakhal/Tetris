@@ -19,7 +19,7 @@ public:
     const std::vector<std::pair<int, int>>& getCoords() const;
     SDL_Color getColor() const { return color; }
 
-    void draw(SDL_Renderer* renderer, int cellSize) const;
+    void draw(SDL_Renderer* renderer, int cellSize, bool isShadow = false) const;
     
     
 
