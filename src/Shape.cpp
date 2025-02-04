@@ -88,12 +88,18 @@ bool Shape::isValidPosition(const std::vector<std::vector<int>>& board, int boar
     for (const auto& coord : coords) {
         int x = coord.first;
         int y = coord.second;
-        if (x < 0 || x >= boardWidth || y >= boardHeight || board[y][x] != 0) {
+
+        if (x < 0 || x >= boardWidth || y < 0 || y >= boardHeight) {
+            return false;
+        }
+        
+        if (board[y][x] != 0) { 
             return false;
         }
     }
     return true;
 }
+
 
 
 void Shape::draw(SDL_Renderer* renderer, int cellSize, bool isShadow) const {
