@@ -46,6 +46,9 @@ void Board::clearFullLines() {
         if (std::all_of(grid[y].begin(), grid[y].end(), [](int cell) { return cell != 0; })) {
             grid.erase(grid.begin() + y);
             grid.insert(grid.begin(), std::vector<int>(cols, 0));
+            
+            colorGrid.erase(colorGrid.begin() + y);
+            colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
             ++y;
         }
     }

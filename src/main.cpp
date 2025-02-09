@@ -10,6 +10,7 @@ int main() {
 
         Game tetrisGame(windowWidth, windowHeight, cellSize);
         tetrisGame.run();
+        SDL_Quit();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;

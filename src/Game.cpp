@@ -39,7 +39,6 @@ Game::Game(int width, int height, int cellSize)
 Game::~Game() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    SDL_Quit();
 }
 
 void Game::run() {
@@ -109,9 +108,14 @@ void Game::processInput() {
                 }
             }
         }
+
+        if (currentTime - lastRotationTime >= rotationDelay) {
+            autoRotateCurrentShape(targetGridX);
+            lastRotationTime = currentTime;
+        }
     }
 
-    if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
+        if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
             lastDownMoveTime = currentTime;
@@ -182,4 +186,113 @@ void Game::spawnNewShape() {
 
 bool Game::isGameOver() const {
     return board.isOccupied(currentShape.getCoords(), 0, 0);
+}
+
+int Game::evaluateLanding(const Shape &candidate) {
+    int contact = 0;
+    const auto &grid = board.getGrid();
+    int rows = board.getRows();
+
+    for (const auto &coord : candidate.getCoords()) {
+        int x = coord.first;
+        int y = coord.second;
+        if (y == rows - 1 || grid[y + 1][x] != 0) {
+            contact++;
+        }
+    }
+    
+    int landingHeight = 0;
+    for (const auto &coord : candidate.getCoords()) {
+        landingHeight += coord.second;
+    }
+
+    return contact * 10 - landingHeight;
+}
+
+void Game::autoRotateCurrentShape(int targetGridX) {
+    if (currentShape.getType() == Shape::Type::I) {
+        auto isHorizontal = [&](const Shape &s) -> bool {
+            const auto &coords = s.getCoords();
+            int y0 = coords[0].second;
+            for (const auto &p : coords) {
+                if (p.second != y0)
+                    return false;
+            }
+            return true;
+        };
+
+        Shape horizontalCandidate = currentShape;
+        for (int i = 0; i < 4; ++i) {
+            if (isHorizontal(horizontalCandidate))
+                break;
+            horizontalCandidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
+        }
+
+        Shape dropHorizontal = horizontalCandidate;
+        while (!board.isOccupied(dropHorizontal.getCoords(), 0, 1)) {
+            dropHorizontal.moveDown();
+        }
+        for (auto &p : dropHorizontal.coords) {
+            p.second -= 1;
+        }
+
+        bool horizontalFits = true;
+        for (const auto &p : dropHorizontal.getCoords()) {
+            if (p.second != board.getRows() - 1) {
+                horizontalFits = false;
+                break;
+            }
+        }
+
+        if (horizontalFits) {
+            currentShape = horizontalCandidate;
+            return;
+        } else {
+            auto isVertical = [&](const Shape &s) -> bool {
+                const auto &coords = s.getCoords();
+                int x0 = coords[0].first;
+                for (const auto &p : coords) {
+                    if (p.first != x0)
+                        return false;
+                }
+                return true;
+            };
+
+            for (int i = 0; i < 4; ++i) {
+                if (isVertical(currentShape))
+                    break;
+                currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
+            }
+            return;
+        }
+    }
+
+    int bestScore = -100000;
+    Shape bestCandidate = currentShape;
+    Shape original = currentShape;
+
+    for (int i = 0; i < 4; ++i) {
+        Shape candidate = original;
+        for (int j = 0; j < i; ++j) {
+            candidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
+        }
+
+        Shape dropCandidate = candidate;
+        while (!board.isOccupied(dropCandidate.getCoords(), 0, 1)) {
+            dropCandidate.moveDown();
+        }
+        for (auto &p : dropCandidate.coords) {
+            p.second -= 1;
+        }
+
+        int score = 0;
+        for (const auto &p : dropCandidate.getCoords()) {
+            score += p.second;
+        }
+        if (score > bestScore) {
+            bestScore = score;
+            bestCandidate = candidate;
+        }
+    }
+    currentShape = bestCandidate;
 }

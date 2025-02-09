@@ -37,4 +37,6 @@ private:
     void render();
     void spawnNewShape();
     bool isGameOver() const;
+    int evaluateLanding(const Shape &candidate);
+    void autoRotateCurrentShape(int targetGridX);
 };

@@ -126,3 +126,7 @@ void Shape::draw(SDL_Renderer* renderer, int cellSize, bool isShadow) const {
 const std::vector<std::pair<int, int>>& Shape::getCoords() const {
     return coords;
 }
+
+Shape::Type Shape::getType() const {
+    return type;
+}
