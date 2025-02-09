@@ -57,7 +57,6 @@ void Game::processInput() {
         running = false;
         return;
     }
-
     if (inputHandler.isKeyPressed(SDLK_ESCAPE)) {
         running = false;
         return;
@@ -65,47 +64,87 @@ void Game::processInput() {
 
     Uint32 currentTime = SDL_GetTicks();
 
-    bool isKeyboardMoving = false;
-    if (currentTime - lastHorizontalMoveTime >= horizontalMoveDelay) {
-        if (inputHandler.isKeyPressed(SDLK_LEFT)) {
+    const Uint32 autoRepeatInitialDelay = 400;
+    const Uint32 autoRepeatInterval     = 100;
+
+    static bool leftKeyHandled = false;
+    static Uint32 leftLastMoveTime = 0;
+    static bool leftFirstRepeat = true;
+
+    if (inputHandler.isKeyPressed(SDLK_LEFT)) {
+        if (!leftKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                 currentShape.moveLeft(board.getCols());
-                lastHorizontalMoveTime = currentTime;
-                isKeyboardMoving = true;
+            }
+            leftKeyHandled = true;
+            leftLastMoveTime = currentTime;
+            leftFirstRepeat = true;
+        } else {
+            if (leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInitialDelay)) {
+                if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                    currentShape.moveLeft(board.getCols());
+                }
+                leftLastMoveTime = currentTime;
+                leftFirstRepeat = false;
+            } else if (!leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInterval)) {
+                if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                    currentShape.moveLeft(board.getCols());
+                }
+                leftLastMoveTime = currentTime;
             }
         }
-        if (inputHandler.isKeyPressed(SDLK_RIGHT)) {
+    } else {
+        leftKeyHandled = false;
+    }
+
+    static bool rightKeyHandled = false;
+    static Uint32 rightLastMoveTime = 0;
+    static bool rightFirstRepeat = true;
+
+    if (inputHandler.isKeyPressed(SDLK_RIGHT)) {
+        if (!rightKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                 currentShape.moveRight(board.getCols());
-                lastHorizontalMoveTime = currentTime;
-                isKeyboardMoving = true;
+            }
+            rightKeyHandled = true;
+            rightLastMoveTime = currentTime;
+            rightFirstRepeat = true;
+        } else {
+            if (rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInitialDelay)) {
+                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                    currentShape.moveRight(board.getCols());
+                }
+                rightLastMoveTime = currentTime;
+                rightFirstRepeat = false;
+            } else if (!rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInterval)) {
+                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                    currentShape.moveRight(board.getCols());
+                }
+                rightLastMoveTime = currentTime;
             }
         }
+    } else {
+        rightKeyHandled = false;
     }
 
     int mouseX = inputHandler.getMouseX();
     static int prevMouseX = -1;
-
     bool isMouseInsideBoard = (mouseX >= 0 && mouseX < board.getCols() * cellSize);
     bool isMouseMoving = (mouseX != prevMouseX);
     prevMouseX = mouseX;
 
-    if (isMouseInsideBoard && isMouseMoving && !isKeyboardMoving) {
+    if (isMouseInsideBoard && isMouseMoving) {
         int targetGridX = mouseX / cellSize;
         targetGridX = std::max(0, std::min(targetGridX, board.getCols() - 1));
 
         int currentX = currentShape.getCoords()[0].first;
-        if (currentTime - lastHorizontalMoveTime >= horizontalMoveDelay) {
-            if (targetGridX > currentX) {
-                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
-                    currentShape.moveRight(board.getCols());
-                    lastHorizontalMoveTime = currentTime;
-                }
-            } else if (targetGridX < currentX) {
-                if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                    currentShape.moveLeft(board.getCols());
-                    lastHorizontalMoveTime = currentTime;
-                }
+        if (targetGridX > currentX) {
+            if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                currentShape.moveRight(board.getCols());
+            }
+        } else if (targetGridX < currentX) {
+            if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                currentShape.moveLeft(board.getCols());
             }
         }
 
@@ -115,7 +154,7 @@ void Game::processInput() {
         }
     }
 
-        if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
+    if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
             lastDownMoveTime = currentTime;
