@@ -27,7 +27,7 @@ Shape::Shape(Type type, int startX, int startY, SDL_Color color)
             coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX - 1, startY + 1}};
             break;
         case Type::L:
-            coords = {{startX, startY + 1}, {startX, startY}, {startX, startY + 2}, {startX + 1, startY + 2}};
+        coords = {{startX, startY + 1}, {startX, startY}, {startX, startY + 2}, {startX + 1, startY + 2}};
             break;
         case Type::J:
             coords = {{startX, startY}, {startX, startY + 1}, {startX, startY + 2}, {startX - 1, startY + 2}};
@@ -66,10 +66,33 @@ void Shape::rotateClockwise(const std::vector<std::vector<int>>& board, int boar
     if (type == Type::O) {
         return;
     }
-
+    
+    std::vector<std::pair<int, int>> preRotationCoords = coords;
+    int oldRotationState = rotationState;
+    
     rotateShape(1);
-    if (!isValidPosition(board, boardWidth, boardHeight)) {
-        rotateShape(-1);
+    
+    if (isValidPosition(board, boardWidth, boardHeight))
+        return;
+    
+    std::vector<std::pair<int, int>> rotatedCoords = coords;
+    std::vector<int> kickOffsets = { 1, -1, 2, -2 };
+    
+    bool kicked = false;
+    for (int dx : kickOffsets) {
+        for (size_t i = 0; i < coords.size(); ++i) {
+            coords[i].first = rotatedCoords[i].first + dx;
+        }
+        if (isValidPosition(board, boardWidth, boardHeight)) {
+            kicked = true;
+            break;
+        }
+        coords = rotatedCoords;
+    }
+    
+    if (!kicked) {
+        coords = preRotationCoords;
+        rotationState = oldRotationState;
     }
 }
 
