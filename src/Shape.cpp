@@ -27,7 +27,7 @@ Shape::Shape(Type type, int startX, int startY, SDL_Color color)
             coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX - 1, startY + 1}};
             break;
         case Type::L:
-            coords = {{startX, startY}, {startX, startY + 1}, {startX, startY + 2}, {startX + 1, startY + 2}};
+            coords = {{startX, startY + 1}, {startX, startY}, {startX, startY + 2}, {startX + 1, startY + 2}};
             break;
         case Type::J:
             coords = {{startX, startY}, {startX, startY + 1}, {startX, startY + 2}, {startX - 1, startY + 2}};
