@@ -260,78 +260,88 @@ void Game::autoRotateCurrentShape(int targetGridX) {
             return true;
         };
 
-        Shape horizontalCandidate = currentShape;
-        for (int i = 0; i < 4; ++i) {
-            if (isHorizontal(horizontalCandidate))
-                break;
-            horizontalCandidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
-        }
+        auto [surfaceCoords, isFlat] = board.getSurfaceCoordsAndFlatStatus(targetGridX);
 
-        Shape dropHorizontal = horizontalCandidate;
-        while (!board.isOccupied(dropHorizontal.getCoords(), 0, 1)) {
-            dropHorizontal.moveDown();
-        }
-        for (auto &p : dropHorizontal.coords) {
-            p.second -= 1;
-        }
-
-        bool horizontalFits = true;
-        for (const auto &p : dropHorizontal.getCoords()) {
-            if (p.second != board.getRows() - 1) {
-                horizontalFits = false;
-                break;
-            }
-        }
-
-        if (horizontalFits) {
-            currentShape = horizontalCandidate;
-            return;
-        } else {
-            auto isVertical = [&](const Shape &s) -> bool {
-                const auto &coords = s.getCoords();
-                int x0 = coords[0].first;
-                for (const auto &p : coords) {
-                    if (p.first != x0)
-                        return false;
-                }
-                return true;
-            };
-
+        if (isFlat) {
+            Shape horizontalCandidate = currentShape;
             for (int i = 0; i < 4; ++i) {
-                if (isVertical(currentShape))
+                if (isHorizontal(horizontalCandidate))
                     break;
-                currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
+                horizontalCandidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
             }
-            return;
+
+            Shape dropHorizontal = horizontalCandidate;
+            while (!board.isOccupied(dropHorizontal.getCoords(), 0, 1)) {
+                dropHorizontal.moveDown();
+            }
+            for (auto &p : dropHorizontal.coords) {
+                p.second -= 1;
+            }
+
+            bool horizontalFits = true;
+            for (const auto &p : dropHorizontal.getCoords()) {
+                if (p.second != board.getRows() - 1) {
+                    horizontalFits = false;
+                    break;
+                }
+            }
+
+            if (horizontalFits) {
+                currentShape = horizontalCandidate;
+                return;
+            }
+        } 
+
+        auto isVertical = [&](const Shape &s) -> bool {
+            const auto &coords = s.getCoords();
+            int x0 = coords[0].first;
+            for (const auto &p : coords) {
+                if (p.first != x0)
+                    return false;
+            }
+            return true;
+        };
+
+        for (int i = 0; i < 4; ++i) {
+            if (isVertical(currentShape))
+                break;
+            currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
         }
     }
 
     int bestScore = -100000;
-    Shape bestCandidate = currentShape;
+    Shape bestOrientation = currentShape;
     Shape original = currentShape;
 
-    for (int i = 0; i < 4; ++i) {
+    for (int rotation = 0; rotation < 4; ++rotation) {
         Shape candidate = original;
-        for (int j = 0; j < i; ++j) {
+
+        for (int r = 0; r < rotation; r++) {
             candidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
         }
 
-        Shape dropCandidate = candidate;
-        while (!board.isOccupied(dropCandidate.getCoords(), 0, 1)) {
-            dropCandidate.moveDown();
-        }
-        for (auto &p : dropCandidate.coords) {
-            p.second -= 1;
-        }
+        Shape dropped = candidate;
+        Board tempBoard = board;
 
-        int score = 0;
-        for (const auto &p : dropCandidate.getCoords()) {
-            score += p.second;
+        while (!tempBoard.isOccupied(dropped.getCoords(), 0, 1)) {
+            dropped.moveDown();
         }
+        tempBoard.placeShape(dropped);
+
+        int linesCleared = tempBoard.countFullLines();
+        int sumY = 0;
+        for (auto &p : dropped.getCoords()) {
+            sumY += p.second;
+        }
+        int holes = tempBoard.countHoles();
+
+        int score = linesCleared * 100 + sumY - holes * 10;
+
         if (score > bestScore) {
             bestScore = score;
-            bestCandidate = candidate;
+            bestOrientation = candidate;
         }
     }
-    currentShape = bestCandidate;
+
+    currentShape = bestOrientation;
 }

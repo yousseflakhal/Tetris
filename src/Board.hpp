@@ -20,6 +20,9 @@ public:
     int getCols() const;
     int getCellSize() const;
     const std::vector<std::vector<int>>& getGrid() const;
+    int countFullLines() const;
+    int countHoles() const;
+    std::pair<std::vector<std::pair<int, int>>, bool> getSurfaceCoordsAndFlatStatus(int x) const;
 
 private:
     int rows, cols, cellSize;

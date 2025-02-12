@@ -95,3 +95,62 @@ int Board::getCellSize() const {
 const std::vector<std::vector<int>>& Board::getGrid() const {
     return grid;
 }
+
+int Board::countFullLines() const {
+    int fullLineCount = 0;
+    for (int y = 0; y < rows; ++y) {
+        bool isFull = std::all_of(grid[y].begin(), grid[y].end(),
+                                  [](int cell) { return cell != 0; });
+        if (isFull) {
+            fullLineCount++;
+        }
+    }
+    return fullLineCount;
+}
+
+int Board::countHoles() const {
+    int holes = 0;
+    
+    for (int x = 0; x < cols; ++x) {
+        bool foundBlockInColumn = false;
+        
+        for (int y = 0; y < rows; ++y) {
+            if (grid[y][x] != 0) {
+                foundBlockInColumn = true;
+            } else {
+                if (foundBlockInColumn) {
+                    holes++;
+                }
+            }
+        }
+    }
+    return holes;
+}
+
+std::pair<std::vector<std::pair<int, int>>, bool> Board::getSurfaceCoordsAndFlatStatus(int x) const {
+    std::vector<std::pair<int, int>> surfaceCoords;
+    
+    if (x < 1 || x >= cols - 1) {
+        return {surfaceCoords, false};
+    }
+
+    int heightLeft = -1, heightMid = -1, heightRight = -1;
+
+    for (int y = 0; y < rows; ++y) {
+        if (heightLeft == -1 && grid[y][x - 1] != 0) heightLeft = y - 1;
+        if (heightMid == -1 && grid[y][x] != 0) heightMid = y - 1;
+        if (heightRight == -1 && grid[y][x + 1] != 0) heightRight = y - 1;
+    }
+
+    if (heightLeft == -1) heightLeft = rows - 1;
+    if (heightMid == -1) heightMid = rows - 1;
+    if (heightRight == -1) heightRight = rows - 1;
+
+    surfaceCoords.push_back({x - 1, heightLeft});
+    surfaceCoords.push_back({x, heightMid});
+    surfaceCoords.push_back({x + 1, heightRight});
+
+    bool isFlat = (heightLeft == heightMid && heightMid == heightRight);
+
+    return {surfaceCoords, isFlat};
+}
