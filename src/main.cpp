@@ -4,8 +4,12 @@
 
 int main() {
     try {
-        const int windowWidth = 400;
-        const int windowHeight = 800;
+        const int boardWidth = 400;
+        const int boardHeight = 800;
+        const int sidebarWidth = 400;
+        const int windowWidth = boardWidth + sidebarWidth;
+        const int windowHeight = boardHeight + 100;
+
         const int cellSize = 40;
 
         Game tetrisGame(windowWidth, windowHeight, cellSize);

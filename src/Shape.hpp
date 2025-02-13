@@ -21,7 +21,7 @@ public:
     const std::vector<std::pair<int, int>>& getCoords() const;
     SDL_Color getColor() const { return color; }
 
-    void draw(SDL_Renderer* renderer, int cellSize, bool isShadow = false) const;
+    void draw(SDL_Renderer* renderer, int cellSize, int offsetX = 0, int offsetY = 0, bool isShadow = false) const;
     Type getType() const;
 
     

@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <deque>
 #include "Board.hpp"
 #include "Shape.hpp"
 #include "InputHandler.hpp"
@@ -32,6 +33,10 @@ private:
 
     Shape shadowShape;
 
+    int windowWidth;
+    int windowHeight;
+    std::deque<Shape> nextPieces;
+
     void processInput();
     void update();
     void render();
@@ -39,4 +44,5 @@ private:
     bool isGameOver() const;
     int evaluateLanding(const Shape &candidate);
     void autoRotateCurrentShape(int targetGridX);
+    void renderNextPieces();
 };

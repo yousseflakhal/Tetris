@@ -1,14 +1,16 @@
 #include "Game.hpp"
 
 
-Game::Game(int width, int height, int cellSize)
-    : board(height / cellSize, width / cellSize, cellSize, {0, 0, 255, 255}),
+Game::Game(int windowWidth, int windowHeight, int cellSize)
+    : board(20, 10, cellSize, {0, 0, 255, 255}),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       shadowShape(currentShape),
       running(true),
       lastMoveTime(SDL_GetTicks()),
       speed(500),
       cellSize(cellSize),
+      windowWidth(windowWidth),
+      windowHeight(windowHeight),
       lastHorizontalMoveTime(0),
       lastDownMoveTime(0),
       lastRotationTime(0),
@@ -21,7 +23,7 @@ Game::Game(int width, int height, int cellSize)
     }
 
     window = SDL_CreateWindow(
-        "Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+        "Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
     if (!window) {
         throw std::runtime_error("Failed to create window");
     }
@@ -127,14 +129,15 @@ void Game::processInput() {
         rightKeyHandled = false;
     }
 
-    int mouseX = inputHandler.getMouseX();
+    int boardOffsetX = 50;
+    int mouseX = inputHandler.getMouseX() - boardOffsetX;
     static int prevMouseX = -1;
     bool isMouseInsideBoard = (mouseX >= 0 && mouseX < board.getCols() * cellSize);
     bool isMouseMoving = (mouseX != prevMouseX);
     prevMouseX = mouseX;
 
     if (isMouseInsideBoard && isMouseMoving) {
-        int targetGridX = mouseX / cellSize;
+        int targetGridX = (mouseX >= 0) ? (mouseX / cellSize) : 0;
         targetGridX = std::max(0, std::min(targetGridX, board.getCols() - 1));
 
         int currentX = currentShape.getCoords()[0].first;
@@ -204,24 +207,21 @@ void Game::update() {
 
 
 void Game::render() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    board.draw(renderer);
-    shadowShape.draw(renderer, board.getCellSize(), true);
-    currentShape.draw(renderer, board.getCellSize());
+    int boardOffsetX = 50;
+    int boardOffsetY = 10;
+
+    board.draw(renderer, boardOffsetX, boardOffsetY);
+    shadowShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY, true);
+    currentShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY);
+
+    renderNextPieces();
+
     SDL_RenderPresent(renderer);
 }
 
-void Game::spawnNewShape() {
-    Shape::Type type = static_cast<Shape::Type>(rand() % 7);
-    currentShape = Shape(type, board.getCols() / 2, 0, {0, 0, 0, 255});
-
-    if (isGameOver()) {
-        std::cout << "Game Over! Cannot place the new shape." << std::endl;
-        running = false;
-    }
-}
 
 bool Game::isGameOver() const {
     return board.isOccupied(currentShape.getCoords(), 0, 0);
@@ -344,4 +344,42 @@ void Game::autoRotateCurrentShape(int targetGridX) {
     }
 
     currentShape = bestOrientation;
+}
+
+void Game::renderNextPieces() {
+    int sidebarX = board.getCols() * cellSize + 100;
+    int sidebarY = 50;
+
+    SDL_Rect sidebarRect = {sidebarX, sidebarY, 150, 400};
+    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+    SDL_RenderFillRect(renderer, &sidebarRect);
+
+    int previewX = sidebarX - (160 - cellSize);
+    int previewY = sidebarY + 20;
+    int previewCellSize = cellSize * 0.75;
+
+    int spacing = 120;
+
+    for (size_t i = 0; i < std::min(nextPieces.size(), size_t(3)); i++) {
+        nextPieces[i].draw(renderer, previewCellSize, previewX, previewY + i * spacing, false);
+    }
+}
+
+void Game::spawnNewShape() {
+    if (nextPieces.empty()) {
+        for (int i = 0; i < 3; i++) {
+            Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
+            nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
+        }
+    }
+
+    currentShape = nextPieces.front();
+    nextPieces.pop_front();
+
+    Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
+    nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
+    for (const auto& piece : nextPieces) {
+        std::cout << static_cast<int>(piece.getType()) << " ";
+    }
+    std::cout << std::endl;
 }

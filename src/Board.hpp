@@ -14,7 +14,7 @@ public:
     void placeShape(const Shape& shape);
     void clearFullLines();
 
-    void draw(SDL_Renderer* renderer) const;
+    void draw(SDL_Renderer* renderer, int offsetX = 0, int offsetY = 0) const;
 
     int getRows() const;
     int getCols() const;
