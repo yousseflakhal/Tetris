@@ -16,7 +16,9 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       lastRotationTime(0),
       horizontalMoveDelay(50),
       downMoveDelay(100),
-      rotationDelay(100)
+      rotationDelay(100),
+      level(1),
+      totalLinesCleared(0)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -179,20 +181,36 @@ void Game::processInput() {
             currentShape.moveDown();
         }
         board.placeShape(currentShape);
-        board.clearFullLines();
+        int clearedLines = board.clearFullLines();
+    
+        if (clearedLines > 0) {
+            totalLinesCleared += clearedLines;
+            std::cout << "Total Lines Cleared: " << totalLinesCleared << std::endl;
+            checkLevelUp();
+        }
+    
         spawnNewShape();
     }
+    
 }
 
 
 void Game::update() {
     Uint32 currentTime = SDL_GetTicks();
+    
     if (currentTime - lastMoveTime >= static_cast<Uint32>(speed)) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
         } else {
             board.placeShape(currentShape);
-            board.clearFullLines();
+            int clearedLines = board.clearFullLines();
+
+            if (clearedLines > 0) {
+                totalLinesCleared += clearedLines;
+                std::cout << "Total Lines Cleared: " << totalLinesCleared << std::endl;
+                checkLevelUp();
+            }
+
             spawnNewShape();
         }
         lastMoveTime = currentTime;
@@ -378,8 +396,14 @@ void Game::spawnNewShape() {
 
     Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
     nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
-    for (const auto& piece : nextPieces) {
-        std::cout << static_cast<int>(piece.getType()) << " ";
+}
+
+void Game::checkLevelUp() {
+    int newLevel = (totalLinesCleared / 10) + 1;
+
+    if (newLevel > level) {
+        level = newLevel;
+        //TODO updateSpeed();
+        std::cout << "Level Up New Level: " << level << std::endl;
     }
-    std::cout << std::endl;
 }

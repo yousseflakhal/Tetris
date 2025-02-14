@@ -12,7 +12,7 @@ public:
 
     bool isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const;
     void placeShape(const Shape& shape);
-    void clearFullLines();
+    int clearFullLines();
 
     void draw(SDL_Renderer* renderer, int offsetX = 0, int offsetY = 0) const;
 

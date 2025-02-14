@@ -37,6 +37,9 @@ private:
     int windowHeight;
     std::deque<Shape> nextPieces;
 
+    int level;
+    int totalLinesCleared;
+
     void processInput();
     void update();
     void render();
@@ -45,4 +48,5 @@ private:
     int evaluateLanding(const Shape &candidate);
     void autoRotateCurrentShape(int targetGridX);
     void renderNextPieces();
+    void checkLevelUp();
 };

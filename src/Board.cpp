@@ -14,13 +14,13 @@ bool Board::isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, i
 
         
         if (x < 0 || x >= cols || y < 0 || y >= rows) {
-            std::cout << "Out-of-bounds detected at (" << x << ", " << y << ")\n";
+            // std::cout << "Out-of-bounds detected at (" << x << ", " << y << ")\n";
             return true;
         }
 
         
         if (grid[y][x] != 0) {
-            std::cout << "Collision detected at (" << x << ", " << y << ")\n";
+            // std::cout << "Collision detected at (" << x << ", " << y << ")\n";
             return true;
         }
     }
@@ -41,17 +41,28 @@ void Board::placeShape(const Shape& shape) {
 }
 
 
-void Board::clearFullLines() {
+int Board::clearFullLines() {
+    std::vector<int> linesToClear;
+
     for (int y = rows - 1; y >= 0; --y) {
         if (std::all_of(grid[y].begin(), grid[y].end(), [](int cell) { return cell != 0; })) {
-            grid.erase(grid.begin() + y);
-            grid.insert(grid.begin(), std::vector<int>(cols, 0));
-            
-            colorGrid.erase(colorGrid.begin() + y);
-            colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
-            ++y;
+            linesToClear.push_back(y);
         }
     }
+
+    if (linesToClear.empty()) {
+        return 0;
+    }
+
+    for (int line : linesToClear) {
+        grid.erase(grid.begin() + line);
+        grid.insert(grid.begin(), std::vector<int>(cols, 0));
+
+        colorGrid.erase(colorGrid.begin() + line);
+        colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
+    }
+
+    return linesToClear.size();
 }
 
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
