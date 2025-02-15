@@ -56,15 +56,17 @@ int Board::clearFullLines() {
 
     for (int line : linesToClear) {
         grid.erase(grid.begin() + line);
-        grid.insert(grid.begin(), std::vector<int>(cols, 0));
-
         colorGrid.erase(colorGrid.begin() + line);
+    }
+
+    int numLinesCleared = linesToClear.size();
+    for (int i = 0; i < numLinesCleared; ++i) {
+        grid.insert(grid.begin(), std::vector<int>(cols, 0));
         colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
     }
 
-    return linesToClear.size();
+    return numLinesCleared;
 }
-
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_Rect rect = {offsetX, offsetY, cols * cellSize, rows * cellSize};
