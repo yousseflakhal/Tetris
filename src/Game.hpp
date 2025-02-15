@@ -40,6 +40,8 @@ private:
     int level;
     int totalLinesCleared;
 
+    int score;
+
     void processInput();
     void update();
     void render();
@@ -49,4 +51,5 @@ private:
     void autoRotateCurrentShape(int targetGridX);
     void renderNextPieces();
     void checkLevelUp();
+    void updateScore(int clearedLines, int dropDistance, bool hardDrop);
 };

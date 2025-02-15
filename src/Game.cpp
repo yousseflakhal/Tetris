@@ -3,6 +3,7 @@
 
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
+      score(0),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       shadowShape(currentShape),
       running(true),
@@ -162,6 +163,7 @@ void Game::processInput() {
     if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
+            updateScore(0, 1, false);
             lastDownMoveTime = currentTime;
         }
     }
@@ -177,17 +179,14 @@ void Game::processInput() {
     }
 
     if (inputHandler.isMouseClicked()) {
+        int dropDistance = 0;
         while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
+            dropDistance++;
         }
         board.placeShape(currentShape);
         int clearedLines = board.clearFullLines();
-    
-        if (clearedLines > 0) {
-            totalLinesCleared += clearedLines;
-            std::cout << "Total Lines Cleared: " << totalLinesCleared << std::endl;
-            checkLevelUp();
-        }
+        updateScore(clearedLines, dropDistance, true);  // Hard drop
     
         spawnNewShape();
     }
@@ -204,10 +203,11 @@ void Game::update() {
         } else {
             board.placeShape(currentShape);
             int clearedLines = board.clearFullLines();
+            int dropDistance = 0;
 
             if (clearedLines > 0) {
                 totalLinesCleared += clearedLines;
-                std::cout << "Total Lines Cleared: " << totalLinesCleared << std::endl;
+                updateScore(clearedLines, dropDistance, false);
                 checkLevelUp();
             }
 
@@ -221,6 +221,7 @@ void Game::update() {
         shadowShape.moveDown();
     }
 }
+
 
 
 
@@ -406,4 +407,24 @@ void Game::checkLevelUp() {
         //TODO updateSpeed();
         std::cout << "Level Up New Level: " << level << std::endl;
     }
+}
+
+void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
+    int points = 0;
+
+    switch (clearedLines) {
+        case 1: points += 40 * (level + 1); break;
+        case 2: points += 100 * (level + 1); break;
+        case 3: points += 300 * (level + 1); break;
+        case 4: points += 1200 * (level + 1); break;
+    }
+
+    if (hardDrop) {
+        points += dropDistance * 2;
+    } else {
+        points += dropDistance * 1;
+    }
+
+    score += points;
+    std::cout << "Score: " << score << std::endl;
 }
