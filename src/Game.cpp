@@ -25,6 +25,15 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("SDL Initialization failed");
     }
 
+    if (TTF_Init() == -1) {
+        throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
+    }
+    
+    font = TTF_OpenFont("fonts/Roboto.ttf", 24);
+    if (!font) {
+        throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
+    }
+
     window = SDL_CreateWindow(
         "Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
     if (!window) {
@@ -186,7 +195,7 @@ void Game::processInput() {
         }
         board.placeShape(currentShape);
         int clearedLines = board.clearFullLines();
-        updateScore(clearedLines, dropDistance, true);  // Hard drop
+        updateScore(clearedLines, dropDistance, true);
     
         spawnNewShape();
     }
@@ -238,9 +247,12 @@ void Game::render() {
 
     renderNextPieces();
 
+    std::string scoreText = "Score: " + std::to_string(score);
+    SDL_Color textColor = {255, 255, 255, 255};
+    renderText(scoreText, 500, 50, textColor);
+
     SDL_RenderPresent(renderer);
 }
-
 
 bool Game::isGameOver() const {
     return board.isOccupied(currentShape.getCoords(), 0, 0);
@@ -427,4 +439,30 @@ void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
 
     score += points;
     std::cout << "Score: " << score << std::endl;
+}
+
+void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
+    if (!font) {
+        std::cerr << "Font not initialized!" << std::endl;
+        return;
+    }
+
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), color);
+    if (!textSurface) {
+        std::cerr << "Text rendering failed: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (!textTexture) {
+        std::cerr << "Texture creation failed: " << SDL_GetError() << std::endl;
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+
+    SDL_Rect textRect = { x, y, textSurface->w, textSurface->h };
+    SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+
+    SDL_FreeSurface(textSurface);
+    SDL_DestroyTexture(textTexture);
 }

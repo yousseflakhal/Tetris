@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <deque>
+#include <string>
 #include "Board.hpp"
 #include "Shape.hpp"
 #include "InputHandler.hpp"
@@ -41,6 +43,7 @@ private:
     int totalLinesCleared;
 
     int score;
+    TTF_Font* font;
 
     void processInput();
     void update();
@@ -52,4 +55,4 @@ private:
     void renderNextPieces();
     void checkLevelUp();
     void updateScore(int clearedLines, int dropDistance, bool hardDrop);
-};
+    void renderText(const std::string& text, int x, int y, SDL_Color color);};
