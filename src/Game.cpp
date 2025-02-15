@@ -28,8 +28,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     if (TTF_Init() == -1) {
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
     }
-    
-    font = TTF_OpenFont("fonts/Roboto.ttf", 24);
+
+    font = TTF_OpenFont("fonts/Roboto.ttf", 28);
     if (!font) {
         throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
     }
@@ -247,12 +247,25 @@ void Game::render() {
 
     renderNextPieces();
 
-    std::string scoreText = "Score: " + std::to_string(score);
+    int sidebarX = 10;
+    int textY = 150;
+
     SDL_Color textColor = {255, 255, 255, 255};
-    renderText(scoreText, 500, 50, textColor);
+
+    std::string scoreText = "Score: " + std::to_string(score);
+    renderText(scoreText, sidebarX, textY, textColor);
+    textY += 50;
+
+    std::string levelText = "Level: " + std::to_string(level);
+    renderText(levelText, sidebarX, textY, textColor);
+    textY += 50;
+
+    std::string linesText = "Lines: " + std::to_string(totalLinesCleared);
+    renderText(linesText, sidebarX, textY, textColor);
 
     SDL_RenderPresent(renderer);
 }
+
 
 bool Game::isGameOver() const {
     return board.isOccupied(currentShape.getCoords(), 0, 0);
@@ -422,6 +435,10 @@ void Game::checkLevelUp() {
 }
 
 void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
+    if (clearedLines > 0) {
+        totalLinesCleared += clearedLines;
+    }
+
     int points = 0;
 
     switch (clearedLines) {
@@ -438,8 +455,10 @@ void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
     }
 
     score += points;
-    std::cout << "Score: " << score << std::endl;
+
+    checkLevelUp();
 }
+
 
 void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
     if (!font) {
