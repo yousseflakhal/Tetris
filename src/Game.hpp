@@ -6,6 +6,7 @@
 #include "Board.hpp"
 #include "Shape.hpp"
 #include "InputHandler.hpp"
+#include <optional>
 
 class Game {
 public:
@@ -45,6 +46,9 @@ private:
     int score;
     TTF_Font* font;
 
+    std::optional<Shape> heldShape;
+    bool canHold;
+
     void processInput();
     void update();
     void render();
@@ -55,4 +59,8 @@ private:
     void renderNextPieces();
     void checkLevelUp();
     void updateScore(int clearedLines, int dropDistance, bool hardDrop);
-    void renderText(const std::string& text, int x, int y, SDL_Color color);};
+    void renderText(const std::string& text, int x, int y, SDL_Color color);
+    void holdPiece();
+    void renderHoldPiece();
+
+};

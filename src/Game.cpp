@@ -4,6 +4,7 @@
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
       score(0),
+      canHold(true),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       shadowShape(currentShape),
       running(true),
@@ -200,6 +201,9 @@ void Game::processInput() {
         spawnNewShape();
     }
     
+    if (inputHandler.isKeyJustPressed(SDLK_c) || inputHandler.isKeyJustPressed(SDLK_LSHIFT)) {
+        holdPiece();
+    }
 }
 
 
@@ -244,8 +248,9 @@ void Game::render() {
     board.draw(renderer, boardOffsetX, boardOffsetY);
     shadowShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY, true);
     currentShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY);
-
+    
     renderNextPieces();
+    renderHoldPiece();
 
     int sidebarX = 10;
     int textY = 150;
@@ -265,6 +270,7 @@ void Game::render() {
 
     SDL_RenderPresent(renderer);
 }
+
 
 
 bool Game::isGameOver() const {
@@ -422,6 +428,8 @@ void Game::spawnNewShape() {
 
     Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
     nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
+
+    canHold = true;
 }
 
 void Game::checkLevelUp() {
@@ -484,4 +492,35 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
 
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
+}
+
+void Game::holdPiece() {
+    if (!canHold) return;
+
+    if (heldShape.has_value()) {
+        std::swap(currentShape, heldShape.value());
+        currentShape.setPosition(board.getCols() / 2, 0);
+        currentShape.resetRotation();
+    } else {
+        heldShape = currentShape;
+        spawnNewShape();
+    }
+
+    canHold = false;
+}
+
+void Game::renderHoldPiece() {
+    if (!heldShape.has_value()) return;
+
+    int holdBoxX = 20;
+    int holdBoxY = 50;
+
+    SDL_Rect holdBox = {holdBoxX - 10, holdBoxY - 10, 120, 120};
+    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+    SDL_RenderFillRect(renderer, &holdBox);
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    renderText("HOLD", holdBoxX + 20, holdBoxY - 30, textColor);
+
+    heldShape->draw(renderer, board.getCellSize() * 0.75, holdBoxX, holdBoxY, false);
 }

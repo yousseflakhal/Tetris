@@ -153,3 +153,17 @@ const std::vector<std::pair<int, int>>& Shape::getCoords() const {
 Shape::Type Shape::getType() const {
     return type;
 }
+
+void Shape::setPosition(int x, int y) {
+    int dx = x - coords[0].first;
+    int dy = y - coords[0].second;
+
+    for (auto& coord : coords) {
+        coord.first += dx;
+        coord.second += dy;
+    }
+}
+
+void Shape::resetRotation() {
+    rotationState = 0;
+}

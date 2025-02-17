@@ -24,6 +24,9 @@ public:
     void draw(SDL_Renderer* renderer, int cellSize, int offsetX = 0, int offsetY = 0, bool isShadow = false) const;
     Type getType() const;
 
+    void setPosition(int x, int y);
+    void resetRotation();
+
     
     
 
