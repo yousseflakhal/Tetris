@@ -16,13 +16,12 @@ public:
     void run();
 
 private:
-
     SDL_Window* window;
     SDL_Renderer* renderer;
-
-
     Board board;
     Shape currentShape;
+    bool canHold;
+    Shape shadowShape;
     InputHandler inputHandler;
     bool running;
     Uint32 lastMoveTime;
@@ -34,21 +33,14 @@ private:
     const Uint32 horizontalMoveDelay;
     const Uint32 downMoveDelay;
     const Uint32 rotationDelay;
-
-    Shape shadowShape;
-
     int windowWidth;
     int windowHeight;
     std::deque<Shape> nextPieces;
-
     int level;
     int totalLinesCleared;
-
     int score;
     TTF_Font* font;
-
     std::optional<Shape> heldShape;
-    bool canHold;
 
     void processInput();
     void update();

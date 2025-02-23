@@ -3,24 +3,28 @@
 
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
-      score(0),
-      canHold(true),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
+      canHold(true),
       shadowShape(currentShape),
+      inputHandler(),
       running(true),
       lastMoveTime(SDL_GetTicks()),
       speed(500),
       cellSize(cellSize),
-      windowWidth(windowWidth),
-      windowHeight(windowHeight),
       lastHorizontalMoveTime(0),
       lastDownMoveTime(0),
       lastRotationTime(0),
       horizontalMoveDelay(50),
       downMoveDelay(100),
       rotationDelay(100),
+      windowWidth(windowWidth),
+      windowHeight(windowHeight),
+      nextPieces(),
       level(1),
-      totalLinesCleared(0)
+      totalLinesCleared(0),
+      score(0),
+      font(nullptr),
+      heldShape(std::nullopt)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -89,7 +93,7 @@ void Game::processInput() {
     if (inputHandler.isKeyPressed(SDLK_LEFT)) {
         if (!leftKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                currentShape.moveLeft(board.getCols());
+                currentShape.moveLeft();
             }
             leftKeyHandled = true;
             leftLastMoveTime = currentTime;
@@ -97,13 +101,13 @@ void Game::processInput() {
         } else {
             if (leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInitialDelay)) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                    currentShape.moveLeft(board.getCols());
+                    currentShape.moveLeft();
                 }
                 leftLastMoveTime = currentTime;
                 leftFirstRepeat = false;
             } else if (!leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInterval)) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                    currentShape.moveLeft(board.getCols());
+                    currentShape.moveLeft();
                 }
                 leftLastMoveTime = currentTime;
             }
@@ -160,7 +164,7 @@ void Game::processInput() {
             }
         } else if (targetGridX < currentX) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                currentShape.moveLeft(board.getCols());
+                currentShape.moveLeft();
             }
         }
 

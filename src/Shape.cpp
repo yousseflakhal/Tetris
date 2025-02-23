@@ -44,7 +44,7 @@ void Shape::moveDown() {
     }
 }
 
-void Shape::moveLeft(int boardWidth) {
+void Shape::moveLeft() {
     for (const auto& coord : coords) {
         if (coord.first - 1 < 0) return;
     }

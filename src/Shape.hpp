@@ -12,7 +12,7 @@ public:
     Shape(Type type, int startX, int startY, SDL_Color color);
 
     void moveDown();
-    void moveLeft(int boardWidth);
+    void moveLeft();
     void moveRight(int boardWidth);
 
     void rotateClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight);
