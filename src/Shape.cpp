@@ -167,3 +167,16 @@ void Shape::setPosition(int x, int y) {
 void Shape::resetRotation() {
     rotationState = 0;
 }
+
+std::vector<std::pair<int, int>> Shape::getLocalCoords() const {
+    if (coords.empty()) return {};
+    
+    int originX = coords[0].first;
+    int originY = coords[0].second;
+    
+    std::vector<std::pair<int, int>> local;
+    for (const auto& c : coords) {
+        local.emplace_back(c.first - originX, c.second - originY);
+    }
+    return local;
+}

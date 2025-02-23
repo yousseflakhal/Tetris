@@ -142,7 +142,7 @@ void Game::processInput() {
         rightKeyHandled = false;
     }
 
-    int boardOffsetX = 50;
+    int boardOffsetX = 200;
     int mouseX = inputHandler.getMouseX() - boardOffsetX;
     static int prevMouseX = -1;
     bool isMouseInsideBoard = (mouseX >= 0 && mouseX < board.getCols() * cellSize);
@@ -150,8 +150,8 @@ void Game::processInput() {
     prevMouseX = mouseX;
 
     if (isMouseInsideBoard && isMouseMoving) {
-        int targetGridX = (mouseX >= 0) ? (mouseX / cellSize) : 0;
-        targetGridX = std::max(0, std::min(targetGridX, board.getCols() - 1));
+        int targetGridX = std::round(static_cast<float>(mouseX) / cellSize);
+        targetGridX = std::clamp(targetGridX, 0, board.getCols() - 1);
 
         int currentX = currentShape.getCoords()[0].first;
         if (targetGridX > currentX) {
@@ -242,7 +242,7 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    int boardOffsetX = 50;
+    int boardOffsetX = 200;
     int boardOffsetY = 10;
 
     board.draw(renderer, boardOffsetX, boardOffsetY);
@@ -397,7 +397,7 @@ void Game::autoRotateCurrentShape(int targetGridX) {
 }
 
 void Game::renderNextPieces() {
-    int sidebarX = board.getCols() * cellSize + 100;
+    int sidebarX = board.getCols() * cellSize + 300;
     int sidebarY = 50;
 
     SDL_Rect sidebarRect = {sidebarX, sidebarY, 150, 400};
@@ -501,8 +501,10 @@ void Game::holdPiece() {
         std::swap(currentShape, heldShape.value());
         currentShape.setPosition(board.getCols() / 2, 0);
         currentShape.resetRotation();
+        heldShape->setPosition(0, 0);
     } else {
         heldShape = currentShape;
+        heldShape->setPosition(0, 0);
         spawnNewShape();
     }
 
@@ -525,11 +527,12 @@ void Game::renderHoldPiece() {
     if (!heldShape.has_value()) return;
 
     int cellSize = board.getCellSize() * 0.75;
-    auto coords = heldShape->getCoords();
     
-    int minX = INT_MAX, maxX = INT_MIN;
-    int minY = INT_MAX, maxY = INT_MIN;
-    for (const auto& coord : coords) {
+    auto localCoords = heldShape->getLocalCoords();
+    
+    int minX = 0, maxX = 0;
+    int minY = 0, maxY = 0;
+    for (const auto& coord : localCoords) {
         minX = std::min(minX, coord.first);
         maxX = std::max(maxX, coord.first);
         minY = std::min(minY, coord.second);
@@ -539,8 +542,8 @@ void Game::renderHoldPiece() {
     int shapeWidth = maxX - minX + 1;
     int shapeHeight = maxY - minY + 1;
     
-    int offsetX = (holdBoxWidth - shapeWidth * cellSize) / 2;
-    int offsetY = (holdBoxHeight - shapeHeight * cellSize) / 2;
+    int drawX = (holdBoxX - 10) + (holdBoxWidth - shapeWidth * cellSize) / 2;
+    int drawY = (holdBoxY - 10) + (holdBoxHeight - shapeHeight * cellSize) / 2;
 
-    heldShape->draw(renderer, cellSize, holdBoxX + offsetX, holdBoxY + offsetY, false);
+    heldShape->draw(renderer, cellSize, drawX, drawY, false);
 }

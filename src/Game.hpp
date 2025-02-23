@@ -7,6 +7,7 @@
 #include "Shape.hpp"
 #include "InputHandler.hpp"
 #include <optional>
+#include <cmath>
 
 class Game {
 public:

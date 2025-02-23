@@ -26,6 +26,7 @@ public:
 
     void setPosition(int x, int y);
     void resetRotation();
+    std::vector<std::pair<int, int>> getLocalCoords() const;
 
     
     

@@ -4,7 +4,7 @@
 
 int main() {
     try {
-        const int boardWidth = 400;
+        const int boardWidth = 600;
         const int boardHeight = 800;
         const int sidebarWidth = 400;
         const int windowWidth = boardWidth + sidebarWidth;
