@@ -8,25 +8,20 @@ Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor)
 
 
 bool Board::isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const {
-    for (const auto& coord : coords) {
-        int x = coord.first + dx;
-        int y = coord.second + dy;
+for (const auto& coord : coords) {
+    int x = coord.first + dx;
+    int y = coord.second + dy;
 
-        
-        if (x < 0 || x >= cols || y < 0 || y >= rows) {
-            // std::cout << "Out-of-bounds detected at (" << x << ", " << y << ")\n";
-            return true;
-        }
-
-        
-        if (grid[y][x] != 0) {
-            // std::cout << "Collision detected at (" << x << ", " << y << ")\n";
-            return true;
-        }
+    if (x < 0 || x >= cols || y < 0 || y >= rows) {
+        return true;
     }
-    return false;
-}
 
+    if (grid[y][x] != 0) {
+        return true;
+    }
+}
+return false;
+}
 
 void Board::placeShape(const Shape& shape) {
     for (const auto& coord : shape.getCoords()) {

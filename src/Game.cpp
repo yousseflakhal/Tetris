@@ -225,6 +225,12 @@ void Game::update() {
             }
 
             spawnNewShape();
+            
+            if (isGameOver()) {
+                running = false;
+                std::cout << "Game Over" << std::endl;
+                return;
+            }
         }
         lastMoveTime = currentTime;
     }
@@ -234,9 +240,6 @@ void Game::update() {
         shadowShape.moveDown();
     }
 }
-
-
-
 
 void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -270,7 +273,6 @@ void Game::render() {
 
     SDL_RenderPresent(renderer);
 }
-
 
 
 bool Game::isGameOver() const {
