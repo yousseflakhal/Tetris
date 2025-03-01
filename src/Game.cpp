@@ -273,7 +273,7 @@ void Game::render() {
     renderHoldPiece();
 
     int sidebarX = 10;
-    int textY = 150;
+    int textY = 250;
     SDL_Color textColor = {255, 255, 255, 255};
     renderText("Score: " + std::to_string(score), sidebarX, textY, textColor);
     textY += 50;
@@ -535,7 +535,7 @@ void Game::holdPiece() {
 
 void Game::renderHoldPiece() {
     int holdBoxX = 20;
-    int holdBoxY = 50;
+    int holdBoxY = 70;
     int holdBoxWidth = 120;
     int holdBoxHeight = 120;
 
@@ -544,7 +544,7 @@ void Game::renderHoldPiece() {
     SDL_RenderFillRect(renderer, &holdBox);
 
     SDL_Color textColor = {255, 255, 255, 255};
-    renderText("HOLD", holdBoxX + 20, holdBoxY - 30, textColor);
+    renderText("HOLD", holdBoxX + 20, holdBoxY - 50, textColor);
 
     if (!heldShape.has_value()) return;
 
