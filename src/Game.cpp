@@ -72,10 +72,21 @@ void Game::run() {
 void Game::processInput() {
     inputHandler.handleInput();
 
-    if (inputHandler.isQuitRequested()) {
+    if (inputHandler.isQuitRequested() || inputHandler.isKeyPressed(SDLK_ESCAPE)) {
         running = false;
         return;
     }
+
+    if (isGameOver()) {
+        if (inputHandler.isKeyJustPressed(SDLK_n)) {
+            resetGame();
+        }
+        if (inputHandler.isKeyJustPressed(SDLK_q)) {
+            running = false;
+        }
+        return;
+    }
+
     if (inputHandler.isKeyPressed(SDLK_ESCAPE)) {
         running = false;
         return;
@@ -231,8 +242,7 @@ void Game::update() {
             spawnNewShape();
             
             if (isGameOver()) {
-                running = false;
-                std::cout << "Game Over" << std::endl;
+                // running = false;
                 return;
             }
         }
@@ -253,27 +263,27 @@ void Game::render() {
     int boardOffsetY = 10;
 
     board.draw(renderer, boardOffsetX, boardOffsetY);
-    shadowShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY, true);
-    currentShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY);
-    
+
+    if (!isGameOver()) {
+        shadowShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY, true);
+        currentShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY);
+    }
+
     renderNextPieces();
     renderHoldPiece();
 
     int sidebarX = 10;
     int textY = 150;
-
     SDL_Color textColor = {255, 255, 255, 255};
-
-    std::string scoreText = "Score: " + std::to_string(score);
-    renderText(scoreText, sidebarX, textY, textColor);
+    renderText("Score: " + std::to_string(score), sidebarX, textY, textColor);
     textY += 50;
-
-    std::string levelText = "Level: " + std::to_string(level);
-    renderText(levelText, sidebarX, textY, textColor);
+    renderText("Level: " + std::to_string(level), sidebarX, textY, textColor);
     textY += 50;
+    renderText("Lines: " + std::to_string(totalLinesCleared), sidebarX, textY, textColor);
 
-    std::string linesText = "Lines: " + std::to_string(totalLinesCleared);
-    renderText(linesText, sidebarX, textY, textColor);
+    if (isGameOver()) {
+        renderGameOverScreen();
+    }
 
     SDL_RenderPresent(renderer);
 }
@@ -432,11 +442,17 @@ void Game::spawnNewShape() {
     currentShape = nextPieces.front();
     nextPieces.pop_front();
 
+    if (isGameOver()) {
+        // running = false;
+        return;
+    }
+
     Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
     nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
 
     canHold = true;
 }
+
 
 void Game::checkLevelUp() {
     int newLevel = (totalLinesCleared / 10) + 1;
@@ -552,4 +568,31 @@ void Game::renderHoldPiece() {
     int drawY = (holdBoxY - 10) + (holdBoxHeight - shapeHeight * cellSize) / 2;
 
     heldShape->draw(renderer, cellSize, drawX, drawY, false);
+}
+
+void Game::renderGameOverScreen() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+    SDL_Rect overlay = {0, 0, windowWidth, windowHeight};
+    SDL_RenderFillRect(renderer, &overlay);
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    int centerX = windowWidth / 2;
+    int centerY = windowHeight / 2;
+
+    renderText("GAME OVER", centerX - 100, centerY - 60, textColor);
+    renderText("Press 'N' to Restart", centerX - 120, centerY, textColor);
+    renderText("Press 'Q' to Quit", centerX - 100, centerY + 40, textColor);
+}
+
+
+void Game::resetGame() {
+    board.clearBoard();
+    score = 0;
+    totalLinesCleared = 0;
+    level = 1;
+    nextPieces.clear();
+    canHold = true;
+    heldShape.reset();
+    spawnNewShape();
+    running = true;
 }

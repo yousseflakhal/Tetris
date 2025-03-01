@@ -23,6 +23,7 @@ public:
     int countFullLines() const;
     int countHoles() const;
     std::pair<std::vector<std::pair<int, int>>, bool> getSurfaceCoordsAndFlatStatus(int x) const;
+    void clearBoard();
 
 private:
     int rows, cols, cellSize;

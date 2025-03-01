@@ -55,5 +55,7 @@ private:
     void renderText(const std::string& text, int x, int y, SDL_Color color);
     void holdPiece();
     void renderHoldPiece();
+    void renderGameOverScreen();
+    void resetGame();
 
 };

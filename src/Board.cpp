@@ -164,3 +164,12 @@ std::pair<std::vector<std::pair<int, int>>, bool> Board::getSurfaceCoordsAndFlat
 
     return {surfaceCoords, isFlat};
 }
+
+void Board::clearBoard() {
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            grid[y][x] = 0;
+            colorGrid[y][x] = {0, 0, 0, 0};
+        }
+    }
+}
