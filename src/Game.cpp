@@ -34,7 +34,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
     }
 
-    font = TTF_OpenFont("fonts/Roboto.ttf", 28);
+    font = TTF_OpenFont("fonts/DejaVuSans.ttf", 48);
     if (!font) {
         throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
     }
@@ -56,6 +56,9 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 }
 
 Game::~Game() {
+    if (font) {
+        TTF_CloseFont(font);
+    }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
@@ -495,7 +498,7 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         return;
     }
 
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), color);
+    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), color);
     if (!textSurface) {
         std::cerr << "Text rendering failed: " << TTF_GetError() << std::endl;
         return;
@@ -508,12 +511,16 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         return;
     }
 
-    SDL_Rect textRect = { x, y, textSurface->w, textSurface->h };
+    float scaleFactor = 1.5f;
+    SDL_Rect textRect = { x, y, static_cast<int>(textSurface->w / scaleFactor), static_cast<int>(textSurface->h / scaleFactor) };
+
     SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
 
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
 }
+
+
 
 void Game::holdPiece() {
     if (!canHold) return;
