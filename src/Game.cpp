@@ -9,7 +9,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       inputHandler(),
       running(true),
       lastMoveTime(SDL_GetTicks()),
-      speed(500),
+      speed(800),
       cellSize(cellSize),
       lastHorizontalMoveTime(0),
       lastDownMoveTime(0),
@@ -242,7 +242,6 @@ void Game::update() {
             spawnNewShape();
             
             if (isGameOver()) {
-                // running = false;
                 return;
             }
         }
@@ -459,7 +458,7 @@ void Game::checkLevelUp() {
 
     if (newLevel > level) {
         level = newLevel;
-        //TODO updateSpeed();
+        updateSpeed();
         std::cout << "Level Up New Level: " << level << std::endl;
     }
 }
@@ -595,4 +594,22 @@ void Game::resetGame() {
     heldShape.reset();
     spawnNewShape();
     running = true;
+}
+
+void Game::updateSpeed() {
+    if (level == 0) speed = 800;
+    else if (level == 1) speed = 717;
+    else if (level == 2) speed = 633;
+    else if (level == 3) speed = 550;
+    else if (level == 4) speed = 467;
+    else if (level == 5) speed = 383;
+    else if (level == 6) speed = 300;
+    else if (level == 7) speed = 217;
+    else if (level == 8) speed = 133;
+    else if (level == 9) speed = 100;
+    else if (level >= 10 && level <= 12) speed = 83;
+    else if (level >= 13 && level <= 15) speed = 67;
+    else if (level >= 16 && level <= 18) speed = 50;
+    else if (level >= 19 && level <= 28) speed = 33;
+    else speed = 16;
 }

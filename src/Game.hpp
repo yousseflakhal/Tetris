@@ -25,7 +25,7 @@ private:
     InputHandler inputHandler;
     bool running;
     Uint32 lastMoveTime;
-    const int speed;
+    int speed;
     int cellSize;
     Uint32 lastHorizontalMoveTime;
     Uint32 lastDownMoveTime;
@@ -57,5 +57,6 @@ private:
     void renderHoldPiece();
     void renderGameOverScreen();
     void resetGame();
+    void updateSpeed();
 
 };
