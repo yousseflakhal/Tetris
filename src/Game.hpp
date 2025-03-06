@@ -16,6 +16,12 @@ public:
     void run();
 
 private:
+    struct Button {
+        SDL_Rect rect;
+        std::string text;
+        SDL_Color color;
+    };
+
     SDL_Window* window;
     SDL_Renderer* renderer;
     Board board;
@@ -41,6 +47,8 @@ private:
     int score;
     TTF_Font* font;
     std::optional<Shape> heldShape;
+    Button newGameButton;
+    Button quitButton;
 
     void processInput();
     void update();
@@ -58,5 +66,6 @@ private:
     void renderGameOverScreen();
     void resetGame();
     void updateSpeed();
+    void renderButton(const Button &button);
 
 };

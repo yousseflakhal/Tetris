@@ -52,6 +52,14 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     srand(time(nullptr));
 
+    newGameButton.rect = {windowWidth / 2 - 75, windowHeight / 2, 150, 50}; // Centered
+    newGameButton.text = "New Game";
+    newGameButton.color = {200, 200, 200, 255};
+
+    quitButton.rect = {windowWidth / 2 - 75, windowHeight / 2 + 60, 150, 50};
+    quitButton.text = "Quit";
+    quitButton.color = {200, 200, 200, 255};
+
     spawnNewShape();
 }
 
@@ -81,13 +89,20 @@ void Game::processInput() {
     }
 
     if (isGameOver()) {
-        if (inputHandler.isKeyJustPressed(SDLK_n)) {
-            resetGame();
+        int mouseX = inputHandler.getMouseX();
+        int mouseY = inputHandler.getMouseY();
+    
+        if (inputHandler.isMouseClicked()) {
+            if (mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
+                mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h) {
+                resetGame();
+            }
+            
+            if (mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
+                mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h) {
+                running = false;
+            }
         }
-        if (inputHandler.isKeyJustPressed(SDLK_q)) {
-            running = false;
-        }
-        return;
     }
 
     if (inputHandler.isKeyPressed(SDLK_ESCAPE)) {
@@ -583,11 +598,13 @@ void Game::renderGameOverScreen() {
 
     SDL_Color textColor = {255, 255, 255, 255};
     int centerX = windowWidth / 2;
-    int centerY = windowHeight / 2;
 
-    renderText("GAME OVER", centerX - 100, centerY - 60, textColor);
-    renderText("Press 'N' to Restart", centerX - 120, centerY, textColor);
-    renderText("Press 'Q' to Quit", centerX - 100, centerY + 40, textColor);
+    renderText("GAME OVER", centerX - 100, windowHeight / 2 - 100, textColor);
+
+    renderButton(newGameButton);
+    renderButton(quitButton);
+
+    SDL_RenderPresent(renderer);
 }
 
 
@@ -601,6 +618,14 @@ void Game::resetGame() {
     heldShape.reset();
     spawnNewShape();
     running = true;
+}
+
+void Game::renderButton(const Button &button) {
+    SDL_SetRenderDrawColor(renderer, button.color.r, button.color.g, button.color.b, button.color.a);
+    SDL_RenderFillRect(renderer, &button.rect);
+
+    SDL_Color textColor = {0, 0, 0, 255};
+    renderText(button.text, button.rect.x + 20, button.rect.y + 10, textColor);
 }
 
 void Game::updateSpeed() {
