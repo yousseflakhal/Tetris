@@ -52,11 +52,11 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     srand(time(nullptr));
 
-    newGameButton.rect = {windowWidth / 2 - 75, windowHeight / 2, 150, 50}; // Centered
+    newGameButton.rect = {windowWidth / 2 - 100, windowHeight / 2, 200, 50};
     newGameButton.text = "New Game";
     newGameButton.color = {200, 200, 200, 255};
 
-    quitButton.rect = {windowWidth / 2 - 75, windowHeight / 2 + 60, 150, 50};
+    quitButton.rect = {windowWidth / 2 - 100, windowHeight / 2 + 60, 200, 50};
     quitButton.text = "Quit";
     quitButton.color = {200, 200, 200, 255};
 
