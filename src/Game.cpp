@@ -92,14 +92,19 @@ void Game::processInput() {
         int mouseX = inputHandler.getMouseX();
         int mouseY = inputHandler.getMouseY();
     
+        bool hoverNewGame = mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
+                            mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h;
+    
+        bool hoverQuit = mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
+                         mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h;
+    
+        newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
+        quitButton.color = hoverQuit ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
+    
         if (inputHandler.isMouseClicked()) {
-            if (mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
-                mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h) {
+            if (hoverNewGame) {
                 resetGame();
-            }
-            
-            if (mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
-                mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h) {
+            } else if (hoverQuit) {
                 running = false;
             }
         }
