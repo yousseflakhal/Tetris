@@ -21,7 +21,7 @@ private:
         std::string text;
         SDL_Color color;
     };
-
+    
     SDL_Window* window;
     SDL_Renderer* renderer;
     Board board;
@@ -50,6 +50,9 @@ private:
     Button newGameButton;
     Button quitButton;
     bool ignoreNextMouseClick;
+    bool isPaused;
+    Button resumeButton;
+
 
     void processInput();
     void update();
@@ -68,5 +71,6 @@ private:
     void resetGame();
     void updateSpeed();
     void renderButton(const Button &button);
+    void renderPauseMenu();
 
 };

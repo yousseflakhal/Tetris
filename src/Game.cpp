@@ -25,7 +25,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       score(0),
       font(nullptr),
       heldShape(std::nullopt),
-      ignoreNextMouseClick(false)
+      ignoreNextMouseClick(false),
+      isPaused(false)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -61,6 +62,10 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     quitButton.text = "Quit";
     quitButton.color = {200, 200, 200, 255};
 
+    resumeButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 120, 200, 50};
+    resumeButton.text = "Resume";
+    resumeButton.color = {200, 200, 200, 255};
+
     spawnNewShape();
 }
 
@@ -84,30 +89,70 @@ void Game::run() {
 void Game::processInput() {
     inputHandler.handleInput();
 
-    if (inputHandler.isQuitRequested() || inputHandler.isKeyPressed(SDLK_ESCAPE)) {
-        running = false;
+    if (isPaused) {
+        int mouseX = inputHandler.getMouseX();
+        int mouseY = inputHandler.getMouseY();
+
+        bool hoverResume = mouseX >= resumeButton.rect.x && mouseX <= resumeButton.rect.x + resumeButton.rect.w &&
+                           mouseY >= resumeButton.rect.y && mouseY <= resumeButton.rect.y + resumeButton.rect.h;
+
+        bool hoverNewGame = mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
+                            mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h;
+
+        bool hoverQuit = mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
+                         mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h;
+
+        resumeButton.color = hoverResume ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
+        newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
+        quitButton.color = hoverQuit ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
+
+        if (inputHandler.isMouseClicked()) {
+            if (ignoreNextMouseClick) {
+                ignoreNextMouseClick = false;
+                return;
+            }
+
+            if (hoverResume) {
+                isPaused = false;
+            } else if (hoverNewGame) {
+                resetGame();
+                isPaused = false;
+            } else if (hoverQuit) {
+                running = false;
+            }
+            return;
+        }
+
+        if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
+            isPaused = false;
+        }
+        return;
+    }
+
+    if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
+        isPaused = true;
         return;
     }
 
     if (isGameOver()) {
         int mouseX = inputHandler.getMouseX();
         int mouseY = inputHandler.getMouseY();
-    
+
         bool hoverNewGame = mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
                             mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h;
-    
+
         bool hoverQuit = mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
                          mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h;
-    
+
         newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
         quitButton.color = hoverQuit ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-    
+
         if (inputHandler.isMouseClicked()) {
             if (ignoreNextMouseClick) {
                 ignoreNextMouseClick = false;
                 return;
             }
-            
+
             if (hoverNewGame) {
                 resetGame();
             } else if (hoverQuit) {
@@ -115,139 +160,139 @@ void Game::processInput() {
             }
             return;
         }
-    } else {
-        Uint32 currentTime = SDL_GetTicks();
+        return;
+    }
 
+    Uint32 currentTime = SDL_GetTicks();
     const Uint32 autoRepeatInitialDelay = 400;
-    const Uint32 autoRepeatInterval     = 100;
+    const Uint32 autoRepeatInterval = 100;
 
-        static bool leftKeyHandled = false;
-        static Uint32 leftLastMoveTime = 0;
-        static bool leftFirstRepeat = true;
+    static bool leftKeyHandled = false;
+    static Uint32 leftLastMoveTime = 0;
+    static bool leftFirstRepeat = true;
 
-        if (inputHandler.isKeyPressed(SDLK_LEFT)) {
-            if (!leftKeyHandled) {
-                if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                    currentShape.moveLeft();
-                }
-                leftKeyHandled = true;
-                leftLastMoveTime = currentTime;
-                leftFirstRepeat = true;
-            } else {
+    if (inputHandler.isKeyPressed(SDLK_LEFT)) {
+        if (!leftKeyHandled) {
+            if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                currentShape.moveLeft();
+            }
+            leftKeyHandled = true;
+            leftLastMoveTime = currentTime;
+            leftFirstRepeat = true;
+        } else {
             if (leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInitialDelay)) {
-                    if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                        currentShape.moveLeft();
-                    }
-                    leftLastMoveTime = currentTime;
-                    leftFirstRepeat = false;
-            } else if (!leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInterval)) {
-                    if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                        currentShape.moveLeft();
-                    }
-                    leftLastMoveTime = currentTime;
-                }
-            }
-        } else {
-            leftKeyHandled = false;
-        }
-
-        static bool rightKeyHandled = false;
-        static Uint32 rightLastMoveTime = 0;
-        static bool rightFirstRepeat = true;
-
-        if (inputHandler.isKeyPressed(SDLK_RIGHT)) {
-            if (!rightKeyHandled) {
-                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
-                    currentShape.moveRight(board.getCols());
-                }
-                rightKeyHandled = true;
-                rightLastMoveTime = currentTime;
-                rightFirstRepeat = true;
-            } else {
-            if (rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInitialDelay)) {
-                    if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
-                        currentShape.moveRight(board.getCols());
-                    }
-                    rightLastMoveTime = currentTime;
-                    rightFirstRepeat = false;
-            } else if (!rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInterval)) {
-                    if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
-                        currentShape.moveRight(board.getCols());
-                    }
-                    rightLastMoveTime = currentTime;
-                }
-            }
-        } else {
-            rightKeyHandled = false;
-        }
-
-        int boardOffsetX = 200;
-        int mouseX = inputHandler.getMouseX() - boardOffsetX;
-        static int prevMouseX = -1;
-        bool isMouseInsideBoard = (mouseX >= 0 && mouseX < board.getCols() * cellSize);
-        bool isMouseMoving = (mouseX != prevMouseX);
-        prevMouseX = mouseX;
-
-        if (isMouseInsideBoard && isMouseMoving) {
-            int targetGridX = std::round(static_cast<float>(mouseX) / cellSize);
-            targetGridX = std::clamp(targetGridX, 0, board.getCols() - 1);
-
-            int currentX = currentShape.getCoords()[0].first;
-            if (targetGridX > currentX) {
-                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
-                    currentShape.moveRight(board.getCols());
-                }
-            } else if (targetGridX < currentX) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
                 }
+                leftLastMoveTime = currentTime;
+                leftFirstRepeat = false;
+            } else if (!leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInterval)) {
+                if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                    currentShape.moveLeft();
+                }
+                leftLastMoveTime = currentTime;
             }
+        }
+    } else {
+        leftKeyHandled = false;
+    }
+
+    static bool rightKeyHandled = false;
+    static Uint32 rightLastMoveTime = 0;
+    static bool rightFirstRepeat = true;
+
+    if (inputHandler.isKeyPressed(SDLK_RIGHT)) {
+        if (!rightKeyHandled) {
+            if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                currentShape.moveRight(board.getCols());
+            }
+            rightKeyHandled = true;
+            rightLastMoveTime = currentTime;
+            rightFirstRepeat = true;
+        } else {
+            if (rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInitialDelay)) {
+                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                    currentShape.moveRight(board.getCols());
+                }
+                rightLastMoveTime = currentTime;
+                rightFirstRepeat = false;
+            } else if (!rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInterval)) {
+                if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                    currentShape.moveRight(board.getCols());
+                }
+                rightLastMoveTime = currentTime;
+            }
+        }
+    } else {
+        rightKeyHandled = false;
+    }
+
+    int boardOffsetX = 200;
+    int mouseX = inputHandler.getMouseX() - boardOffsetX;
+    static int prevMouseX = -1;
+    bool isMouseInsideBoard = (mouseX >= 0 && mouseX < board.getCols() * cellSize);
+    bool isMouseMoving = (mouseX != prevMouseX);
+    prevMouseX = mouseX;
+
+    if (isMouseInsideBoard && isMouseMoving) {
+        int targetGridX = std::round(static_cast<float>(mouseX) / cellSize);
+        targetGridX = std::clamp(targetGridX, 0, board.getCols() - 1);
+
+        int currentX = currentShape.getCoords()[0].first;
+        if (targetGridX > currentX) {
+            if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
+                currentShape.moveRight(board.getCols());
+            }
+        } else if (targetGridX < currentX) {
+            if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
+                currentShape.moveLeft();
+            }
+        }
 
         if (currentTime - lastRotationTime >= rotationDelay) {
-                autoRotateCurrentShape(targetGridX);
-                lastRotationTime = currentTime;
-            }
+            autoRotateCurrentShape(targetGridX);
+            lastRotationTime = currentTime;
         }
+    }
 
     if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
-            if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
-                currentShape.moveDown();
-                updateScore(0, 1, false);
-                lastDownMoveTime = currentTime;
-            }
+        if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+            currentShape.moveDown();
+            updateScore(0, 1, false);
+            lastDownMoveTime = currentTime;
+        }
+    }
+
+    static bool rotationKeyHandled = false;
+    if (inputHandler.isKeyJustPressed(SDLK_UP)) {
+        if (!rotationKeyHandled) {
+            currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
+            rotationKeyHandled = true;
+        }
+    } else {
+        rotationKeyHandled = false;
+    }
+
+    if (inputHandler.isMouseClicked()) {
+        if (ignoreNextMouseClick) {
+            ignoreNextMouseClick = false;
+            return;
         }
 
-        static bool rotationKeyHandled = false;
-        if (inputHandler.isKeyJustPressed(SDLK_UP)) {
-            if (!rotationKeyHandled) {
-                currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
-                rotationKeyHandled = true;
-            }
-        } else {
-            rotationKeyHandled = false;
+        int dropDistance = 0;
+        while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+            currentShape.moveDown();
+            dropDistance++;
         }
+        board.placeShape(currentShape);
+        int clearedLines = board.clearFullLines();
+        updateScore(clearedLines, dropDistance, true);
 
-        if (inputHandler.isMouseClicked()) {
-            if (ignoreNextMouseClick) {
-                ignoreNextMouseClick = false;
-                return;
-            }
-            
-            int dropDistance = 0;
-            while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
-                currentShape.moveDown();
-                dropDistance++;
-            }
-            board.placeShape(currentShape);
-            int clearedLines = board.clearFullLines();
-            updateScore(clearedLines, dropDistance, true);
-    
-            spawnNewShape();
-        }
+        spawnNewShape();
+    }
 
-        if (inputHandler.isKeyJustPressed(SDLK_c) || inputHandler.isKeyJustPressed(SDLK_LSHIFT)) {
-            holdPiece();
-        }
+    if (inputHandler.isKeyJustPressed(SDLK_c) || inputHandler.isKeyJustPressed(SDLK_LSHIFT)) {
+        holdPiece();
     }
 }
 
@@ -285,6 +330,11 @@ void Game::update() {
 }
 
 void Game::render() {
+    if (isPaused) {
+        renderPauseMenu();
+        return;
+    }
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
@@ -316,6 +366,7 @@ void Game::render() {
 
     SDL_RenderPresent(renderer);
 }
+
 
 
 bool Game::isGameOver() const {
@@ -525,8 +576,13 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         return;
     }
 
+    if (text.empty()) {
+        std::cerr << "Skipping rendering empty text" << std::endl;
+        return;
+    }
+
     SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), color);
-    if (!textSurface) {
+    if (!textSurface || textSurface->w == 0) {
         std::cerr << "Text rendering failed: " << TTF_GetError() << std::endl;
         return;
     }
@@ -538,9 +594,7 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         return;
     }
 
-    float scaleFactor = 1.5f;
-    SDL_Rect textRect = { x, y, static_cast<int>(textSurface->w / scaleFactor), static_cast<int>(textSurface->h / scaleFactor) };
-
+    SDL_Rect textRect = { x, y, textSurface->w, textSurface->h };
     SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
 
     SDL_FreeSurface(textSurface);
@@ -657,4 +711,19 @@ void Game::updateSpeed() {
     else if (level >= 16 && level <= 18) speed = 50;
     else if (level >= 19 && level <= 28) speed = 33;
     else speed = 16;
+}
+
+void Game::renderPauseMenu() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+    SDL_Rect overlay = {0, 0, windowWidth, windowHeight};
+    SDL_RenderFillRect(renderer, &overlay);
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    renderText("PAUSED", windowWidth / 2 - 60, windowHeight / 2 - 180, textColor);
+
+    renderButton(resumeButton);
+    renderButton(newGameButton);
+    renderButton(quitButton);
+
+    SDL_RenderPresent(renderer);
 }
