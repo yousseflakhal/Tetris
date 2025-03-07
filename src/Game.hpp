@@ -49,6 +49,7 @@ private:
     std::optional<Shape> heldShape;
     Button newGameButton;
     Button quitButton;
+    bool ignoreNextMouseClick;
 
     void processInput();
     void update();
