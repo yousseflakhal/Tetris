@@ -36,7 +36,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
     }
 
-    font = TTF_OpenFont("fonts/DejaVuSans.ttf", 48);
+    font = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
     if (!font) {
         throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
     }
@@ -87,7 +87,13 @@ void Game::run() {
 }
 
 void Game::processInput() {
+    inputHandler.resetQuitRequested();
     inputHandler.handleInput();
+
+    if (inputHandler.isQuitRequested()) {
+        running = false;
+        return;
+    }
 
     if (isPaused) {
         int mouseX = inputHandler.getMouseX();
@@ -124,13 +130,15 @@ void Game::processInput() {
         }
 
         if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
-            isPaused = false;
+            isPaused = !isPaused;
+            inputHandler.clearKeyState(SDLK_ESCAPE);
+            return;
         }
-        return;
     }
 
     if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
-        isPaused = true;
+        isPaused = !isPaused;
+        inputHandler.clearKeyState(SDLK_ESCAPE);
         return;
     }
 

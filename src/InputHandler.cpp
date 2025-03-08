@@ -41,8 +41,14 @@ bool InputHandler::isQuitRequested() const {
 }
 
 bool InputHandler::isKeyJustPressed(SDL_Keycode key) const {
-    auto it = keyStates.find(key);
-    return it != keyStates.end() && it->second && !keyRepeatStates.at(key);
+    auto keyIt = keyStates.find(key);
+    auto repeatIt = keyRepeatStates.find(key);
+    
+    if (keyIt == keyStates.end() || repeatIt == keyRepeatStates.end()) {
+        return false;
+    }
+    
+    return keyIt->second && !repeatIt->second;
 }
 
 int InputHandler::getMouseX() const {
@@ -55,4 +61,13 @@ int InputHandler::getMouseY() const {
 
 bool InputHandler::isMouseClicked() const {
     return mouseClicked;
+}
+
+void InputHandler::resetQuitRequested() {
+    quitRequested = false;
+}
+
+void InputHandler::clearKeyState(SDL_Keycode key) {
+    keyStates[key] = false;
+    keyRepeatStates[key] = false;
 }
