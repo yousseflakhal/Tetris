@@ -62,7 +62,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     quitButton.text = "Quit";
     quitButton.color = {200, 200, 200, 255};
 
-    resumeButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 120, 200, 50};
+    resumeButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 60, 200, 50};
     resumeButton.text = "Resume";
     resumeButton.color = {200, 200, 200, 255};
 
