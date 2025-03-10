@@ -54,7 +54,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     srand(time(nullptr));
 
-    newGameButton.rect = {windowWidth / 2 - 100, windowHeight / 2, 200, 50};
+    newGameButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 60, 200, 50};
     newGameButton.text = "New Game";
     newGameButton.color = {200, 200, 200, 255};
 
@@ -62,9 +62,13 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     quitButton.text = "Quit";
     quitButton.color = {200, 200, 200, 255};
 
-    resumeButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 60, 200, 50};
+    resumeButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 120, 200, 50};
     resumeButton.text = "Resume";
     resumeButton.color = {200, 200, 200, 255};
+
+    settingsButton.rect = {windowWidth / 2 - 100, windowHeight / 2, 200, 50};
+    settingsButton.text = "Settings";
+    settingsButton.color = {200, 200, 200, 255};
 
     spawnNewShape();
 }
@@ -107,10 +111,14 @@ void Game::processInput() {
 
         bool hoverQuit = mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
                          mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h;
+        
+        bool hoverSettings = mouseX >= settingsButton.rect.x && mouseX <= settingsButton.rect.x + settingsButton.rect.w &&
+                         mouseY >= settingsButton.rect.y && mouseY <= settingsButton.rect.y + settingsButton.rect.h;
 
         resumeButton.color = hoverResume ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
         newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
         quitButton.color = hoverQuit ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
+        settingsButton.color = hoverSettings ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
 
         if (inputHandler.isMouseClicked()) {
             if (ignoreNextMouseClick) {
@@ -123,6 +131,8 @@ void Game::processInput() {
             } else if (hoverNewGame) {
                 resetGame();
                 isPaused = false;
+            } else if (hoverSettings) {
+                // TODO: Open settings screen
             } else if (hoverQuit) {
                 running = false;
             }
@@ -731,6 +741,7 @@ void Game::renderPauseMenu() {
 
     renderButton(resumeButton);
     renderButton(newGameButton);
+    renderButton(settingsButton);
     renderButton(quitButton);
 
     SDL_RenderPresent(renderer);

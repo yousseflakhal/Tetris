@@ -52,6 +52,7 @@ private:
     bool ignoreNextMouseClick;
     bool isPaused;
     Button resumeButton;
+    Button settingsButton;
 
 
     void processInput();
