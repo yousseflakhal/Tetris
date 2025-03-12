@@ -317,23 +317,25 @@ void Game::processInput() {
 
 void Game::update() {
     Uint32 currentTime = SDL_GetTicks();
-    
+
+    if (board.isClearingLines) {
+        if (board.clearAnimationFrame < 10) {
+            board.clearAnimationFrame++;
+            return;
+        } else {
+            board.finalizeLineClear();
+        }
+    }
+
     if (currentTime - lastMoveTime >= static_cast<Uint32>(speed)) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
         } else {
             board.placeShape(currentShape);
             int clearedLines = board.clearFullLines();
-            int dropDistance = 0;
-
-            if (clearedLines > 0) {
-                totalLinesCleared += clearedLines;
-                updateScore(clearedLines, dropDistance, false);
-                checkLevelUp();
-            }
 
             spawnNewShape();
-            
+
             if (isGameOver()) {
                 return;
             }
@@ -346,6 +348,7 @@ void Game::update() {
         shadowShape.moveDown();
     }
 }
+
 
 void Game::render() {
     if (isPaused) {

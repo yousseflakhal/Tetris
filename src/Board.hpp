@@ -10,6 +10,9 @@ class Board {
 public:
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor);
 
+    bool isClearingLines = false;
+    int clearAnimationFrame = 0;
+
     bool isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const;
     void placeShape(const Shape& shape);
     int clearFullLines();
@@ -24,10 +27,13 @@ public:
     int countHoles() const;
     std::pair<std::vector<std::pair<int, int>>, bool> getSurfaceCoordsAndFlatStatus(int x) const;
     void clearBoard();
+    void finalizeLineClear();
 
 private:
     int rows, cols, cellSize;
     SDL_Color backgroundColor;
     std::vector<std::vector<int>> grid;
     std::vector<std::vector<SDL_Color>> colorGrid;
+    std::vector<int> linesToClear;
+    
 };

@@ -37,7 +37,9 @@ void Board::placeShape(const Shape& shape) {
 
 
 int Board::clearFullLines() {
-    std::vector<int> linesToClear;
+    linesToClear.clear();
+    isClearingLines = true;
+    clearAnimationFrame = 0;
 
     for (int y = rows - 1; y >= 0; --y) {
         if (std::all_of(grid[y].begin(), grid[y].end(), [](int cell) { return cell != 0; })) {
@@ -45,22 +47,7 @@ int Board::clearFullLines() {
         }
     }
 
-    if (linesToClear.empty()) {
-        return 0;
-    }
-
-    for (int line : linesToClear) {
-        grid.erase(grid.begin() + line);
-        colorGrid.erase(colorGrid.begin() + line);
-    }
-
-    int numLinesCleared = linesToClear.size();
-    for (int i = 0; i < numLinesCleared; ++i) {
-        grid.insert(grid.begin(), std::vector<int>(cols, 0));
-        colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
-    }
-
-    return numLinesCleared;
+    return linesToClear.size();
 }
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -80,14 +67,23 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
             if (grid[y][x] != 0) {
-                SDL_SetRenderDrawColor(renderer, colorGrid[y][x].r,
-                                       colorGrid[y][x].g, colorGrid[y][x].b, 255);
+                SDL_Color color = colorGrid[y][x];
+
+                if (isClearingLines && std::find(linesToClear.begin(), linesToClear.end(), y) != linesToClear.end()) {
+                    int fadeFactor = (clearAnimationFrame * 25);
+                    color.r = std::max(0, color.r - fadeFactor);
+                    color.g = std::max(0, color.g - fadeFactor);
+                    color.b = std::max(0, color.b - fadeFactor);
+                }
+
+                SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
                 SDL_Rect cellRect = {offsetX + x * cellSize, offsetY + y * cellSize, cellSize - 1, cellSize - 1};
                 SDL_RenderFillRect(renderer, &cellRect);
             }
         }
     }
 }
+
 
 
 int Board::getRows() const {
@@ -172,4 +168,23 @@ void Board::clearBoard() {
             colorGrid[y][x] = {0, 0, 0, 0};
         }
     }
+}
+
+void Board::finalizeLineClear() {
+    if (!isClearingLines) return;
+
+    // Remove full lines
+    for (int line : linesToClear) {
+        grid.erase(grid.begin() + line);
+        colorGrid.erase(colorGrid.begin() + line);
+    }
+
+    int numLinesCleared = linesToClear.size();
+    for (int i = 0; i < numLinesCleared; ++i) {
+        grid.insert(grid.begin(), std::vector<int>(cols, 0));
+        colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
+    }
+
+    isClearingLines = false;
+    linesToClear.clear();
 }
