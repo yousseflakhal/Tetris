@@ -319,10 +319,7 @@ void Game::update() {
     Uint32 currentTime = SDL_GetTicks();
 
     if (board.isClearingLines) {
-        if (board.clearAnimationFrame < 10) {
-            board.clearAnimationFrame++;
-            return;
-        } else {
+        if (currentTime - board.clearStartTime >= 500) {
             board.finalizeLineClear();
         }
     }
@@ -333,6 +330,11 @@ void Game::update() {
         } else {
             board.placeShape(currentShape);
             int clearedLines = board.clearFullLines();
+            updateScore(clearedLines, 0, false);
+
+            if (clearedLines > 0) {
+                board.clearStartTime = currentTime;
+            }
 
             spawnNewShape();
 
@@ -361,7 +363,6 @@ void Game::render() {
 
     int boardOffsetX = 200;
     int boardOffsetY = 10;
-
     board.draw(renderer, boardOffsetX, boardOffsetY);
 
     if (!isGameOver()) {

@@ -38,15 +38,15 @@ void Board::placeShape(const Shape& shape) {
 
 int Board::clearFullLines() {
     linesToClear.clear();
-    isClearingLines = true;
-    clearAnimationFrame = 0;
-
     for (int y = rows - 1; y >= 0; --y) {
         if (std::all_of(grid[y].begin(), grid[y].end(), [](int cell) { return cell != 0; })) {
             linesToClear.push_back(y);
         }
     }
-
+    if (!linesToClear.empty()) {
+        isClearingLines = true;
+        clearStartTime = SDL_GetTicks();
+    }
     return linesToClear.size();
 }
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
@@ -70,20 +70,33 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
                 SDL_Color color = colorGrid[y][x];
 
                 if (isClearingLines && std::find(linesToClear.begin(), linesToClear.end(), y) != linesToClear.end()) {
-                    int fadeFactor = (clearAnimationFrame * 25);
-                    color.r = std::max(0, color.r - fadeFactor);
-                    color.g = std::max(0, color.g - fadeFactor);
-                    color.b = std::max(0, color.b - fadeFactor);
-                }
+                    Uint32 currentTime = SDL_GetTicks();
+                    float elapsed = static_cast<float>(currentTime - clearStartTime);
+                    float progress = elapsed / 500.0f;
+                    if (progress > 1.0f) progress = 1.0f;
 
-                SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
-                SDL_Rect cellRect = {offsetX + x * cellSize, offsetY + y * cellSize, cellSize - 1, cellSize - 1};
-                SDL_RenderFillRect(renderer, &cellRect);
+                    Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress));
+                    float rotation = 360.0f * progress;
+
+                    SDL_Texture* tempTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, cellSize, cellSize);
+                    SDL_SetRenderTarget(renderer, tempTexture);
+                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
+                    SDL_RenderClear(renderer);
+                    SDL_SetRenderTarget(renderer, nullptr);
+
+                    SDL_Rect cellRect = {offsetX + x * cellSize, offsetY + y * cellSize, cellSize - 1, cellSize - 1};
+                    SDL_RenderCopyEx(renderer, tempTexture, nullptr, &cellRect, rotation, nullptr, SDL_FLIP_NONE);
+
+                    SDL_DestroyTexture(tempTexture);
+                } else {
+                    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
+                    SDL_Rect cellRect = {offsetX + x * cellSize, offsetY + y * cellSize, cellSize - 1, cellSize - 1};
+                    SDL_RenderFillRect(renderer, &cellRect);
+                }
             }
         }
     }
 }
-
 
 
 int Board::getRows() const {
@@ -187,4 +200,5 @@ void Board::finalizeLineClear() {
 
     isClearingLines = false;
     linesToClear.clear();
+    clearStartTime = 0;
 }

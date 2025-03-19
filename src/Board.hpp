@@ -12,6 +12,8 @@ public:
 
     bool isClearingLines = false;
     int clearAnimationFrame = 0;
+    mutable Uint32 clearStartTime;
+    SDL_Texture* whiteCellTexture;
 
     bool isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const;
     void placeShape(const Shape& shape);
