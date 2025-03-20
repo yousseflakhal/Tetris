@@ -79,6 +79,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
                     float rotation = 360.0f * progress;
 
                     SDL_Texture* tempTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, cellSize, cellSize);
+                    SDL_SetTextureBlendMode(tempTexture, SDL_BLENDMODE_BLEND);
                     SDL_SetRenderTarget(renderer, tempTexture);
                     SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
                     SDL_RenderClear(renderer);
