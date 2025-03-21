@@ -91,6 +91,8 @@ void Game::run() {
 }
 
 void Game::processInput() {
+    if (resumeCountdownActive) return;
+
     inputHandler.resetQuitRequested();
     inputHandler.handleInput();
 
@@ -128,6 +130,8 @@ void Game::processInput() {
 
             if (hoverResume) {
                 isPaused = false;
+                resumeCountdownActive = true;
+                countdownStartTime = SDL_GetTicks();
             } else if (hoverNewGame) {
                 resetGame();
                 isPaused = false;
@@ -316,6 +320,17 @@ void Game::processInput() {
 
 
 void Game::update() {
+
+    if (resumeCountdownActive) {
+        Uint32 now = SDL_GetTicks();
+        Uint32 elapsed = now - countdownStartTime;
+    
+        if (elapsed >= 3000) {
+            resumeCountdownActive = false;
+        }
+        return;
+    }
+
     Uint32 currentTime = SDL_GetTicks();
 
     if (board.isClearingLines) {
@@ -386,7 +401,24 @@ void Game::render() {
         renderGameOverScreen();
     }
 
+    if (resumeCountdownActive) {
+        Uint32 now = SDL_GetTicks();
+        Uint32 elapsed = now - countdownStartTime;
+        int countdownValue = 3 - (elapsed / 1000);
+    
+        std::string countdownText;
+        if (countdownValue > 0)
+            countdownText = std::to_string(countdownValue);
+    
+        int textX = windowWidth / 2 - 40;
+        int textY = windowHeight / 2 - 40;
+        SDL_Color white = {255, 255, 255, 255};
+        renderText(countdownText, textX, textY, white);
+    }
+
     SDL_RenderPresent(renderer);
+
+
 }
 
 

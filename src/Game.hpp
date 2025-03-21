@@ -53,6 +53,8 @@ private:
     bool isPaused;
     Button resumeButton;
     Button settingsButton;
+    bool resumeCountdownActive = false;
+    Uint32 countdownStartTime = 0;
 
 
     void processInput();
