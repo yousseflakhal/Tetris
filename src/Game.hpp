@@ -21,6 +21,15 @@ private:
         std::string text;
         SDL_Color color;
     };
+
+    struct Checkbox {
+        SDL_Rect rect;
+        bool checked;
+        std::string label;
+        SDL_Color labelColor;
+    };
+
+    enum class Screen { Main, Settings };
     
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -55,6 +64,10 @@ private:
     Button settingsButton;
     bool resumeCountdownActive = false;
     Uint32 countdownStartTime = 0;
+    bool mouseControlEnabled = true;
+    Checkbox settingsCheckbox;
+    bool inSettingsMenu = false;
+    Screen currentScreen;
 
 
     void processInput();
@@ -75,5 +88,6 @@ private:
     void updateSpeed();
     void renderButton(const Button &button);
     void renderPauseMenu();
+    void renderSettingsScreen();
 
 };

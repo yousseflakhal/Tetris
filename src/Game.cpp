@@ -70,6 +70,12 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     settingsButton.text = "Settings";
     settingsButton.color = {200, 200, 200, 255};
 
+    settingsCheckbox.checked = mouseControlEnabled;
+    settingsCheckbox.label = "Enable Mouse Control";
+    settingsCheckbox.labelColor = {255, 255, 255, 255};
+
+    currentScreen = Screen::Main;
+
     spawnNewShape();
 }
 
@@ -100,6 +106,45 @@ void Game::processInput() {
         running = false;
         return;
     }
+    if (currentScreen == Screen::Settings) {
+        int labelX = windowWidth / 2 - 150;
+        int labelY = 150;
+    
+        SDL_Color white = {255, 255, 255, 255};
+        SDL_Surface* labelSurface = TTF_RenderText_Blended(font, settingsCheckbox.label.c_str(), white);
+        if (labelSurface) {
+            int labelWidth = labelSurface->w;
+            SDL_FreeSurface(labelSurface);
+            settingsCheckbox.rect.x = labelX + labelWidth + 15;
+            settingsCheckbox.rect.y = labelY + 5;
+            settingsCheckbox.rect.w = 20;
+            settingsCheckbox.rect.h = 20;
+        }
+    
+        int mouseX = inputHandler.getMouseX();
+        int mouseY = inputHandler.getMouseY();
+    
+        bool hoverCheckbox = mouseX >= settingsCheckbox.rect.x &&
+                             mouseX <= settingsCheckbox.rect.x + settingsCheckbox.rect.w &&
+                             mouseY >= settingsCheckbox.rect.y &&
+                             mouseY <= settingsCheckbox.rect.y + settingsCheckbox.rect.h;
+    
+        if (inputHandler.isMouseClicked()) {
+            if (ignoreNextMouseClick) {
+                ignoreNextMouseClick = false;
+            } else if (hoverCheckbox) {
+                settingsCheckbox.checked = !settingsCheckbox.checked;
+                mouseControlEnabled = settingsCheckbox.checked;
+            }
+        }
+    
+        if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
+            currentScreen = Screen::Main;
+            inputHandler.clearKeyState(SDLK_ESCAPE);
+        }
+    
+        return;
+    }
 
     if (isPaused) {
         int mouseX = inputHandler.getMouseX();
@@ -116,6 +161,9 @@ void Game::processInput() {
         
         bool hoverSettings = mouseX >= settingsButton.rect.x && mouseX <= settingsButton.rect.x + settingsButton.rect.w &&
                          mouseY >= settingsButton.rect.y && mouseY <= settingsButton.rect.y + settingsButton.rect.h;
+        
+        bool hoverCheckbox = mouseX >= settingsCheckbox.rect.x && mouseX <= settingsCheckbox.rect.x + settingsCheckbox.rect.w &&
+        mouseY >= settingsCheckbox.rect.y && mouseY <= settingsCheckbox.rect.y + settingsCheckbox.rect.h;
 
         resumeButton.color = hoverResume ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
         newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
@@ -136,7 +184,8 @@ void Game::processInput() {
                 resetGame();
                 isPaused = false;
             } else if (hoverSettings) {
-                // TODO: Open settings screen
+                currentScreen = Screen::Settings;
+                ignoreNextMouseClick = true;
             } else if (hoverQuit) {
                 running = false;
             }
@@ -256,7 +305,7 @@ void Game::processInput() {
     bool isMouseMoving = (mouseX != prevMouseX);
     prevMouseX = mouseX;
 
-    if (isMouseInsideBoard && isMouseMoving) {
+    if (mouseControlEnabled && isMouseInsideBoard && isMouseMoving) {
         int targetGridX = std::round(static_cast<float>(mouseX) / cellSize);
         targetGridX = std::clamp(targetGridX, 0, board.getCols() - 1);
 
@@ -368,6 +417,11 @@ void Game::update() {
 
 
 void Game::render() {
+    if (currentScreen == Screen::Settings) {
+        renderSettingsScreen();
+        return;
+    }
+
     if (isPaused) {
         renderPauseMenu();
         return;
@@ -780,5 +834,43 @@ void Game::renderPauseMenu() {
     renderButton(settingsButton);
     renderButton(quitButton);
 
+    SDL_RenderPresent(renderer);
+}
+
+void Game::renderSettingsScreen() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_Color white = {255, 255, 255, 255};
+    renderText("SETTINGS", windowWidth / 2 - 60, 50, white);
+
+    int labelX = windowWidth / 2 - 150;
+    int labelY = 150;
+
+    SDL_Surface* labelSurface = TTF_RenderText_Blended(font, settingsCheckbox.label.c_str(), white);
+    if (!labelSurface) return;
+
+    int labelWidth = labelSurface->w;
+    SDL_FreeSurface(labelSurface);
+
+    renderText(settingsCheckbox.label, labelX, labelY, white);
+
+    settingsCheckbox.rect.x = labelX + labelWidth + 15;
+    settingsCheckbox.rect.y = labelY + 5;
+    settingsCheckbox.rect.w = 20;
+    settingsCheckbox.rect.h = 20;
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderDrawRect(renderer, &settingsCheckbox.rect);
+
+    if (settingsCheckbox.checked) {
+        SDL_Rect inner = {
+            settingsCheckbox.rect.x + 4,
+            settingsCheckbox.rect.y + 4,
+            settingsCheckbox.rect.w - 8,
+            settingsCheckbox.rect.h - 8
+        };
+        SDL_RenderFillRect(renderer, &inner);
+    }
     SDL_RenderPresent(renderer);
 }
