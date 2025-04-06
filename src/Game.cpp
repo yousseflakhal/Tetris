@@ -1,6 +1,5 @@
 #include "Game.hpp"
 
-
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
@@ -26,12 +25,15 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       font(nullptr),
       heldShape(std::nullopt),
       ignoreNextMouseClick(false),
-      isPaused(false)
+      isPaused(false),
+      resumeCountdownActive(false),
+      countdownStartTime(0),
+      mouseControlEnabled(true),
+      currentScreen(Screen::Main)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
     }
-
     if (TTF_Init() == -1) {
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
     }
@@ -42,7 +44,13 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     }
 
     window = SDL_CreateWindow(
-        "Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
+        "Tetris",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        windowWidth,
+        windowHeight,
+        SDL_WINDOW_SHOWN
+    );
     if (!window) {
         throw std::runtime_error("Failed to create window");
     }
@@ -54,27 +62,65 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     srand(time(nullptr));
 
-    newGameButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 60, 200, 50};
-    newGameButton.text = "New Game";
-    newGameButton.color = {200, 200, 200, 255};
+    FormUI::Init(font);
 
-    quitButton.rect = {windowWidth / 2 - 100, windowHeight / 2 + 60, 200, 50};
-    quitButton.text = "Quit";
-    quitButton.color = {200, 200, 200, 255};
+    newGameBtn = FormUI::Button(
+        "New Game",
+        windowWidth / 2 - 100,
+        windowHeight / 2 - 60,
+        200,
+        50,
+        [this]() {
+            resetGame();
+            isPaused = false;
+            resumeCountdownActive = false;
+        }
+    );
 
-    resumeButton.rect = {windowWidth / 2 - 100, windowHeight / 2 - 120, 200, 50};
-    resumeButton.text = "Resume";
-    resumeButton.color = {200, 200, 200, 255};
+    quitBtn = FormUI::Button(
+        "Quit",
+        windowWidth / 2 - 100,
+        windowHeight / 2 + 60,
+        200,
+        50,
+        [this]() {
+            running = false;
+        }
+    );
 
-    settingsButton.rect = {windowWidth / 2 - 100, windowHeight / 2, 200, 50};
-    settingsButton.text = "Settings";
-    settingsButton.color = {200, 200, 200, 255};
+    resumeBtn = FormUI::Button(
+        "Resume",
+        windowWidth / 2 - 100,
+        windowHeight / 2 - 120,
+        200,
+        50,
+        [this]() {
+            isPaused = false;
+            resumeCountdownActive = true;
+            countdownStartTime = SDL_GetTicks();
+        }
+    );
 
-    settingsCheckbox.checked = mouseControlEnabled;
-    settingsCheckbox.label = "Enable Mouse Control";
-    settingsCheckbox.labelColor = {255, 255, 255, 255};
+    settingsBtn = FormUI::Button(
+        "Settings",
+        windowWidth / 2 - 100,
+        windowHeight / 2,
+        200,
+        50,
+        [this]() {
+            currentScreen = Screen::Settings;
+        }
+    );
 
-    currentScreen = Screen::Main;
+    mouseControlCheckbox = FormUI::Checkbox(
+        "Enable Mouse Control",
+        windowWidth / 2 - 150,
+        150,
+        300,
+        30,
+        &mouseControlEnabled
+    );
+    mouseControlCheckbox->visible = false;
 
     spawnNewShape();
 }
@@ -97,139 +143,50 @@ void Game::run() {
 }
 
 void Game::processInput() {
-    if (resumeCountdownActive) return;
+    inputHandler.beginFrame();
 
-    inputHandler.resetQuitRequested();
-    inputHandler.handleInput();
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        inputHandler.handleEvent(e);
+        FormUI::HandleEvent(e);
 
-    if (inputHandler.isQuitRequested()) {
-        running = false;
+        if (inputHandler.isQuitRequested()) {
+            running = false;
+            return;
+        }
+    }
+
+    if (resumeCountdownActive) {
         return;
     }
+
     if (currentScreen == Screen::Settings) {
-        int labelX = windowWidth / 2 - 150;
-        int labelY = 150;
-    
-        SDL_Color white = {255, 255, 255, 255};
-        SDL_Surface* labelSurface = TTF_RenderText_Blended(font, settingsCheckbox.label.c_str(), white);
-        if (labelSurface) {
-            int labelWidth = labelSurface->w;
-            SDL_FreeSurface(labelSurface);
-            settingsCheckbox.rect.x = labelX + labelWidth + 15;
-            settingsCheckbox.rect.y = labelY + 5;
-            settingsCheckbox.rect.w = 20;
-            settingsCheckbox.rect.h = 20;
-        }
-    
-        int mouseX = inputHandler.getMouseX();
-        int mouseY = inputHandler.getMouseY();
-    
-        bool hoverCheckbox = mouseX >= settingsCheckbox.rect.x &&
-                             mouseX <= settingsCheckbox.rect.x + settingsCheckbox.rect.w &&
-                             mouseY >= settingsCheckbox.rect.y &&
-                             mouseY <= settingsCheckbox.rect.y + settingsCheckbox.rect.h;
-    
-        if (inputHandler.isMouseClicked()) {
-            if (ignoreNextMouseClick) {
-                ignoreNextMouseClick = false;
-            } else if (hoverCheckbox) {
-                settingsCheckbox.checked = !settingsCheckbox.checked;
-                mouseControlEnabled = settingsCheckbox.checked;
-            }
-        }
-    
         if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
             currentScreen = Screen::Main;
             inputHandler.clearKeyState(SDLK_ESCAPE);
         }
-    
         return;
     }
 
     if (isPaused) {
-        int mouseX = inputHandler.getMouseX();
-        int mouseY = inputHandler.getMouseY();
-
-        bool hoverResume = mouseX >= resumeButton.rect.x && mouseX <= resumeButton.rect.x + resumeButton.rect.w &&
-                           mouseY >= resumeButton.rect.y && mouseY <= resumeButton.rect.y + resumeButton.rect.h;
-
-        bool hoverNewGame = mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
-                            mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h;
-
-        bool hoverQuit = mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
-                         mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h;
-        
-        bool hoverSettings = mouseX >= settingsButton.rect.x && mouseX <= settingsButton.rect.x + settingsButton.rect.w &&
-                         mouseY >= settingsButton.rect.y && mouseY <= settingsButton.rect.y + settingsButton.rect.h;
-        
-        bool hoverCheckbox = mouseX >= settingsCheckbox.rect.x && mouseX <= settingsCheckbox.rect.x + settingsCheckbox.rect.w &&
-        mouseY >= settingsCheckbox.rect.y && mouseY <= settingsCheckbox.rect.y + settingsCheckbox.rect.h;
-
-        resumeButton.color = hoverResume ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-        newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-        quitButton.color = hoverQuit ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-        settingsButton.color = hoverSettings ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-
-        if (inputHandler.isMouseClicked()) {
-            if (ignoreNextMouseClick) {
-                ignoreNextMouseClick = false;
-                return;
-            }
-
-            if (hoverResume) {
-                isPaused = false;
-                resumeCountdownActive = true;
-                countdownStartTime = SDL_GetTicks();
-            } else if (hoverNewGame) {
-                resetGame();
-                isPaused = false;
-            } else if (hoverSettings) {
-                currentScreen = Screen::Settings;
-                ignoreNextMouseClick = true;
-            } else if (hoverQuit) {
-                running = false;
-            }
-            return;
-        }
-
         if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
-            isPaused = !isPaused;
+            isPaused = false;
             inputHandler.clearKeyState(SDLK_ESCAPE);
-            return;
         }
+        return;
     }
 
     if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
-        isPaused = !isPaused;
+        isPaused = true;
         inputHandler.clearKeyState(SDLK_ESCAPE);
         return;
     }
 
     if (isGameOver()) {
-        int mouseX = inputHandler.getMouseX();
-        int mouseY = inputHandler.getMouseY();
-
-        bool hoverNewGame = mouseX >= newGameButton.rect.x && mouseX <= newGameButton.rect.x + newGameButton.rect.w &&
-                            mouseY >= newGameButton.rect.y && mouseY <= newGameButton.rect.y + newGameButton.rect.h;
-
-        bool hoverQuit = mouseX >= quitButton.rect.x && mouseX <= quitButton.rect.x + quitButton.rect.w &&
-                         mouseY >= quitButton.rect.y && mouseY <= quitButton.rect.y + quitButton.rect.h;
-
-        newGameButton.color = hoverNewGame ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-        quitButton.color = hoverQuit ? SDL_Color{255, 255, 255, 255} : SDL_Color{200, 200, 200, 255};
-
         if (inputHandler.isMouseClicked()) {
             if (ignoreNextMouseClick) {
                 ignoreNextMouseClick = false;
-                return;
             }
-
-            if (hoverNewGame) {
-                resetGame();
-            } else if (hoverQuit) {
-                running = false;
-            }
-            return;
         }
         return;
     }
@@ -251,13 +208,13 @@ void Game::processInput() {
             leftLastMoveTime = currentTime;
             leftFirstRepeat = true;
         } else {
-            if (leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInitialDelay)) {
+            if (leftFirstRepeat && currentTime - leftLastMoveTime >= autoRepeatInitialDelay) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
                 }
                 leftLastMoveTime = currentTime;
                 leftFirstRepeat = false;
-            } else if (!leftFirstRepeat && (currentTime - leftLastMoveTime >= autoRepeatInterval)) {
+            } else if (!leftFirstRepeat && currentTime - leftLastMoveTime >= autoRepeatInterval) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
                 }
@@ -281,13 +238,13 @@ void Game::processInput() {
             rightLastMoveTime = currentTime;
             rightFirstRepeat = true;
         } else {
-            if (rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInitialDelay)) {
+            if (rightFirstRepeat && currentTime - rightLastMoveTime >= autoRepeatInitialDelay) {
                 if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                     currentShape.moveRight(board.getCols());
                 }
                 rightLastMoveTime = currentTime;
                 rightFirstRepeat = false;
-            } else if (!rightFirstRepeat && (currentTime - rightLastMoveTime >= autoRepeatInterval)) {
+            } else if (!rightFirstRepeat && currentTime - rightLastMoveTime >= autoRepeatInterval) {
                 if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                     currentShape.moveRight(board.getCols());
                 }
@@ -326,14 +283,6 @@ void Game::processInput() {
         }
     }
 
-    if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
-        if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
-            currentShape.moveDown();
-            updateScore(0, 1, false);
-            lastDownMoveTime = currentTime;
-        }
-    }
-
     static bool rotationKeyHandled = false;
     if (inputHandler.isKeyJustPressed(SDLK_UP)) {
         if (!rotationKeyHandled) {
@@ -344,12 +293,19 @@ void Game::processInput() {
         rotationKeyHandled = false;
     }
 
+    if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
+        if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+            currentShape.moveDown();
+            updateScore(0, 1, false);
+            lastDownMoveTime = currentTime;
+        }
+    }
+
     if (inputHandler.isMouseClicked()) {
         if (ignoreNextMouseClick) {
             ignoreNextMouseClick = false;
             return;
         }
-
         int dropDistance = 0;
         while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
@@ -358,7 +314,6 @@ void Game::processInput() {
         board.placeShape(currentShape);
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
-
         spawnNewShape();
     }
 
@@ -366,6 +321,7 @@ void Game::processInput() {
         holdPiece();
     }
 }
+
 
 
 void Game::update() {
@@ -417,64 +373,74 @@ void Game::update() {
 
 
 void Game::render() {
-    if (currentScreen == Screen::Settings) {
-        renderSettingsScreen();
-        return;
-    }
-
-    if (isPaused) {
-        renderPauseMenu();
-        return;
-    }
-
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    int boardOffsetX = 200;
-    int boardOffsetY = 10;
-    board.draw(renderer, boardOffsetX, boardOffsetY);
-
+    board.draw(renderer, 200, 10);
     if (!isGameOver()) {
-        shadowShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY, true);
-        currentShape.draw(renderer, board.getCellSize(), boardOffsetX, boardOffsetY);
+        shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
+        currentShape.draw(renderer, board.getCellSize(), 200, 10);
     }
-
     renderNextPieces();
     renderHoldPiece();
-
-    int sidebarX = 10;
-    int textY = 250;
-    SDL_Color textColor = {255, 255, 255, 255};
-    renderText("Score: " + std::to_string(score), sidebarX, textY, textColor);
-    textY += 50;
-    renderText("Level: " + std::to_string(level), sidebarX, textY, textColor);
-    textY += 50;
-    renderText("Lines: " + std::to_string(totalLinesCleared), sidebarX, textY, textColor);
 
     if (isGameOver()) {
         renderGameOverScreen();
     }
+    if (isPaused) {
+        renderPauseMenu();
+    }
+    if (currentScreen == Screen::Settings) {
+        renderSettingsScreen();
+    }
+
+    if (!isPaused && currentScreen != Screen::Settings && !isGameOver()) {
+        SDL_Color textColor = {255, 255, 255, 255};
+        renderText("Score: " + std::to_string(score), 10, 250, textColor);
+        renderText("Level: " + std::to_string(level), 10, 300, textColor);
+        renderText("Lines: " + std::to_string(totalLinesCleared), 10, 350, textColor);
+    }
+
+    if (currentScreen == Screen::Settings) {
+        mouseControlCheckbox->visible = true;
+        resumeBtn->visible    = false;
+        newGameBtn->visible   = false;
+        quitBtn->visible      = false;
+        settingsBtn->visible  = false;
+    } 
+    else if (isPaused) {
+        resumeBtn->visible    = true;
+        newGameBtn->visible   = true;
+        quitBtn->visible      = true;
+        settingsBtn->visible  = true;
+        mouseControlCheckbox->visible = false;
+    } 
+    else {
+        resumeBtn->visible    = false;
+        newGameBtn->visible   = false;
+        quitBtn->visible      = false;
+        settingsBtn->visible  = false;
+        mouseControlCheckbox->visible = false;
+    }
+
+    FormUI::Render(renderer);
 
     if (resumeCountdownActive) {
         Uint32 now = SDL_GetTicks();
         Uint32 elapsed = now - countdownStartTime;
         int countdownValue = 3 - (elapsed / 1000);
-    
-        std::string countdownText;
-        if (countdownValue > 0)
-            countdownText = std::to_string(countdownValue);
-    
-        int textX = windowWidth / 2 - 40;
-        int textY = windowHeight / 2 - 40;
-        SDL_Color white = {255, 255, 255, 255};
-        renderText(countdownText, textX, textY, white);
+
+        if (countdownValue > 0) {
+            SDL_Color white = {255, 255, 255, 255};
+            renderText(std::to_string(countdownValue),
+                       windowWidth / 2 - 40,
+                       windowHeight / 2 - 40,
+                       white);
+        }
     }
 
     SDL_RenderPresent(renderer);
-
-
 }
-
 
 
 bool Game::isGameOver() const {
@@ -772,13 +738,7 @@ void Game::renderGameOverScreen() {
 
     SDL_Color textColor = {255, 255, 255, 255};
     int centerX = windowWidth / 2;
-
     renderText("GAME OVER", centerX - 100, windowHeight / 2 - 100, textColor);
-
-    renderButton(newGameButton);
-    renderButton(quitButton);
-
-    SDL_RenderPresent(renderer);
 }
 
 
@@ -793,14 +753,6 @@ void Game::resetGame() {
     spawnNewShape();
     running = true;
     ignoreNextMouseClick = true;
-}
-
-void Game::renderButton(const Button &button) {
-    SDL_SetRenderDrawColor(renderer, button.color.r, button.color.g, button.color.b, button.color.a);
-    SDL_RenderFillRect(renderer, &button.rect);
-
-    SDL_Color textColor = {0, 0, 0, 255};
-    renderText(button.text, button.rect.x + 20, button.rect.y + 10, textColor);
 }
 
 void Game::updateSpeed() {
@@ -828,13 +780,6 @@ void Game::renderPauseMenu() {
 
     SDL_Color textColor = {255, 255, 255, 255};
     renderText("PAUSED", windowWidth / 2 - 60, windowHeight / 2 - 180, textColor);
-
-    renderButton(resumeButton);
-    renderButton(newGameButton);
-    renderButton(settingsButton);
-    renderButton(quitButton);
-
-    SDL_RenderPresent(renderer);
 }
 
 void Game::renderSettingsScreen() {
@@ -843,34 +788,4 @@ void Game::renderSettingsScreen() {
 
     SDL_Color white = {255, 255, 255, 255};
     renderText("SETTINGS", windowWidth / 2 - 60, 50, white);
-
-    int labelX = windowWidth / 2 - 150;
-    int labelY = 150;
-
-    SDL_Surface* labelSurface = TTF_RenderText_Blended(font, settingsCheckbox.label.c_str(), white);
-    if (!labelSurface) return;
-
-    int labelWidth = labelSurface->w;
-    SDL_FreeSurface(labelSurface);
-
-    renderText(settingsCheckbox.label, labelX, labelY, white);
-
-    settingsCheckbox.rect.x = labelX + labelWidth + 15;
-    settingsCheckbox.rect.y = labelY + 5;
-    settingsCheckbox.rect.w = 20;
-    settingsCheckbox.rect.h = 20;
-
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(renderer, &settingsCheckbox.rect);
-
-    if (settingsCheckbox.checked) {
-        SDL_Rect inner = {
-            settingsCheckbox.rect.x + 4,
-            settingsCheckbox.rect.y + 4,
-            settingsCheckbox.rect.w - 8,
-            settingsCheckbox.rect.h - 8
-        };
-        SDL_RenderFillRect(renderer, &inner);
-    }
-    SDL_RenderPresent(renderer);
 }

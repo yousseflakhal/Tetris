@@ -6,7 +6,6 @@ class InputHandler {
 public:
     InputHandler();
     void resetQuitRequested();
-    void handleInput();
     bool isKeyPressed(SDL_Keycode key) const;
     bool isQuitRequested() const;
     bool isKeyJustPressed(SDL_Keycode key) const;
@@ -14,6 +13,8 @@ public:
     int getMouseY() const;
     bool isMouseClicked() const;
     void clearKeyState(SDL_Keycode key);
+    void handleEvent(const SDL_Event &event);
+    void beginFrame();
 
 private:
     std::unordered_map<SDL_Keycode, bool> keyStates;

@@ -1,4 +1,6 @@
 #define SDL_MAIN_HANDLED
+#define SDLFORMUI_IMPLEMENTATION
+#include "SDLFormUI.hpp"
 #include "Game.hpp"
 #include <iostream>
 

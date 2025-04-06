@@ -3,11 +3,14 @@
 #include <SDL2/SDL_ttf.h>
 #include <deque>
 #include <string>
+#include <optional>
+#include <memory>
+#include <cmath>
 #include "Board.hpp"
 #include "Shape.hpp"
 #include "InputHandler.hpp"
-#include <optional>
-#include <cmath>
+#include "SDLFormUI.hpp"
+
 
 class Game {
 public:
@@ -16,21 +19,8 @@ public:
     void run();
 
 private:
-    struct Button {
-        SDL_Rect rect;
-        std::string text;
-        SDL_Color color;
-    };
-
-    struct Checkbox {
-        SDL_Rect rect;
-        bool checked;
-        std::string label;
-        SDL_Color labelColor;
-    };
-
     enum class Screen { Main, Settings };
-    
+
     SDL_Window* window;
     SDL_Renderer* renderer;
     Board board;
@@ -56,19 +46,18 @@ private:
     int score;
     TTF_Font* font;
     std::optional<Shape> heldShape;
-    Button newGameButton;
-    Button quitButton;
     bool ignoreNextMouseClick;
     bool isPaused;
-    Button resumeButton;
-    Button settingsButton;
-    bool resumeCountdownActive = false;
-    Uint32 countdownStartTime = 0;
-    bool mouseControlEnabled = true;
-    Checkbox settingsCheckbox;
-    bool inSettingsMenu = false;
+    bool resumeCountdownActive;
+    Uint32 countdownStartTime;
+    bool mouseControlEnabled;
     Screen currentScreen;
 
+    std::shared_ptr<UIButton> newGameBtn;
+    std::shared_ptr<UIButton> quitBtn;
+    std::shared_ptr<UIButton> resumeBtn;
+    std::shared_ptr<UIButton> settingsBtn;
+    std::shared_ptr<UICheckbox> mouseControlCheckbox;
 
     void processInput();
     void update();
@@ -86,8 +75,6 @@ private:
     void renderGameOverScreen();
     void resetGame();
     void updateSpeed();
-    void renderButton(const Button &button);
     void renderPauseMenu();
     void renderSettingsScreen();
-
 };

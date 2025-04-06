@@ -3,31 +3,29 @@
 InputHandler::InputHandler() 
     : keyStates{}, quitRequested(false), mouseX(0), mouseY(0), mouseClicked(false) {}
 
-void InputHandler::handleInput() {
-    SDL_Event event;
+void InputHandler::beginFrame() {
     mouseClicked = false;
-
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_KEYDOWN) {
-            if (!event.key.repeat) {
-                keyStates[event.key.keysym.sym] = true;
-                keyRepeatStates[event.key.keysym.sym] = false;
-            } else {
-                keyRepeatStates[event.key.keysym.sym] = true;
-            }
-        } else if (event.type == SDL_KEYUP) {
-            keyStates[event.key.keysym.sym] = false;
+}
+void InputHandler::handleEvent(const SDL_Event &event) {
+    if (event.type == SDL_KEYDOWN) {
+        if (!event.key.repeat) {
+            keyStates[event.key.keysym.sym] = true;
             keyRepeatStates[event.key.keysym.sym] = false;
-        } else if (event.type == SDL_MOUSEMOTION) {
-            mouseX = event.motion.x;
-            mouseY = event.motion.y;
-        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-            if (event.button.button == SDL_BUTTON_LEFT) {
-                mouseClicked = true;
-            }
-        } else if (event.type == SDL_QUIT) {
-            quitRequested = true;
+        } else {
+            keyRepeatStates[event.key.keysym.sym] = true;
         }
+    } else if (event.type == SDL_KEYUP) {
+        keyStates[event.key.keysym.sym] = false;
+        keyRepeatStates[event.key.keysym.sym] = false;
+    } else if (event.type == SDL_MOUSEMOTION) {
+        mouseX = event.motion.x;
+        mouseY = event.motion.y;
+    } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+        if (event.button.button == SDL_BUTTON_LEFT) {
+            mouseClicked = true;
+        }
+    } else if (event.type == SDL_QUIT) {
+        quitRequested = true;
     }
 }
 
