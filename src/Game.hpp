@@ -57,7 +57,10 @@ private:
     std::shared_ptr<UIButton> quitBtn;
     std::shared_ptr<UIButton> resumeBtn;
     std::shared_ptr<UIButton> settingsBtn;
+    std::shared_ptr<UIButton> gameOverNewGameBtn;
+    std::shared_ptr<UIButton> gameOverQuitBtn;
     std::shared_ptr<UICheckbox> mouseControlCheckbox;
+
 
     void processInput();
     void update();

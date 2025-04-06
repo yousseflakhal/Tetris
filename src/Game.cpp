@@ -122,6 +122,30 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     );
     mouseControlCheckbox->visible = false;
 
+    gameOverNewGameBtn = FormUI::Button(
+        "New Game",
+        windowWidth / 2 - 100,
+        windowHeight / 2 - 60,
+        200,
+        50,
+        [this]() {
+            resetGame();
+        }
+    );
+    
+    gameOverQuitBtn = FormUI::Button(
+        "Quit",
+        windowWidth / 2 - 100,
+        windowHeight / 2 + 10,
+        200,
+        50,
+        [this]() {
+            running = false; 
+        }
+    );
+    gameOverNewGameBtn->visible = false;
+    gameOverQuitBtn->visible = false;
+
     spawnNewShape();
 }
 
@@ -136,6 +160,7 @@ Game::~Game() {
 void Game::run() {
     while (running) {
         processInput();
+        FormUI::Update();
         update();
         render();
         SDL_Delay(16);  // Limit frame rate (~60 FPS)
@@ -386,7 +411,13 @@ void Game::render() {
 
     if (isGameOver()) {
         renderGameOverScreen();
+        gameOverNewGameBtn->visible = true;
+        gameOverQuitBtn->visible    = true;
+    } else {
+        gameOverNewGameBtn->visible = false;
+        gameOverQuitBtn->visible    = false;
     }
+    
     if (isPaused) {
         renderPauseMenu();
     }
