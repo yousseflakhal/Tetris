@@ -301,7 +301,7 @@ void Game::processInput() {
         }
     }
 
-    if (inputHandler.isMouseClicked()) {
+    if (mouseControlEnabled && inputHandler.isMouseClicked()) {
         if (ignoreNextMouseClick) {
             ignoreNextMouseClick = false;
             return;
