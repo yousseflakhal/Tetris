@@ -64,6 +64,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     FormUI::Init(font);
 
+    TTF_Font* smallFont = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 10);
+
     newGameBtn = FormUI::Button(
         "New Game",
         windowWidth / 2 - 100,
@@ -118,7 +120,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         150,
         300,
         30,
-        &mouseControlEnabled
+        &mouseControlEnabled,
+        smallFont
     );
     mouseControlCheckbox->visible = false;
 
@@ -145,6 +148,27 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     );
     gameOverNewGameBtn->visible = false;
     gameOverQuitBtn->visible = false;
+
+    FormUI::Layout layout(windowWidth / 2 - 150, 200, 10);
+
+    std::vector<std::string> labels = {
+        "MOVE RIGHT", "MOVE LEFT", "ROTATE RIGHT", "ROTATE LEFT",
+        "SOFT DROP", "HARD DROP", "HOLD"
+    };
+    
+    std::vector<std::string> keys = {
+        "RIGHT ARROW", "LEFT ARROW", "UP ARROW", "Z",
+        "DOWN ARROW", "SPACE", "C"
+    };
+    
+    for (size_t i = 0; i < labels.size(); ++i) {
+        auto [label, button] = layout.addLabelButtonRow(labels[i], keys[i], [](){}, 200, 100, 30, smallFont,smallFont);
+        label->visible = false;
+        button->visible = false;
+        controlLabels.push_back(label);
+        controlButtons.push_back(button);
+    }
+
 
     spawnNewShape();
 }
@@ -326,6 +350,18 @@ void Game::processInput() {
         }
     }
 
+    // if (inputHandler.isKeyJustPressed(SDLK_SPACE)) {
+    //     int dropDistance = 0;
+    //     while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+    //         currentShape.moveDown();
+    //         dropDistance++;
+    //     }
+    //     board.placeShape(currentShape);
+    //     int clearedLines = board.clearFullLines();
+    //     updateScore(clearedLines, dropDistance, true);
+    //     spawnNewShape();
+    // }
+
     if (mouseControlEnabled && inputHandler.isMouseClicked()) {
         if (ignoreNextMouseClick) {
             ignoreNextMouseClick = false;
@@ -434,6 +470,8 @@ void Game::render() {
 
     if (currentScreen == Screen::Settings) {
         mouseControlCheckbox->visible = true;
+        for (auto& label : controlLabels) label->visible = true;
+        for (auto& button : controlButtons) button->visible = true;
         resumeBtn->visible    = false;
         newGameBtn->visible   = false;
         quitBtn->visible      = false;
@@ -444,6 +482,8 @@ void Game::render() {
         newGameBtn->visible   = true;
         quitBtn->visible      = true;
         settingsBtn->visible  = true;
+        for (auto& label : controlLabels) label->visible = false;
+        for (auto& button : controlButtons) button->visible = false;
         mouseControlCheckbox->visible = false;
     } 
     else {
@@ -451,6 +491,8 @@ void Game::render() {
         newGameBtn->visible   = false;
         quitBtn->visible      = false;
         settingsBtn->visible  = false;
+        for (auto& label : controlLabels) label->visible = false;
+        for (auto& button : controlButtons) button->visible = false;
         mouseControlCheckbox->visible = false;
     }
 

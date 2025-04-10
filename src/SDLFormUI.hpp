@@ -11,118 +11,131 @@
 #include <iomanip>
 #include <sstream>
 
+
 class UIElement {
-    public:
-        SDL_Rect bounds;
-        bool visible = true;
-    
-        virtual void handleEvent(const SDL_Event& e) = 0;
-        virtual bool isHovered() const { return false; }
-        virtual void update(float dt) = 0;
-        virtual void render(SDL_Renderer* renderer) = 0;
-        virtual ~UIElement() = default;
+public:
+    SDL_Rect bounds;
+    bool visible = true;
+
+    virtual void handleEvent(const SDL_Event& e) = 0;
+    virtual bool isHovered() const { return false; }
+    virtual void update(float dt) = 0;
+    virtual void render(SDL_Renderer* renderer) = 0;
+    virtual ~UIElement() = default;
 };
+
 
 class UIConfig {
-    public:
-        static void setDefaultFont(TTF_Font* font);
-        static TTF_Font* getDefaultFont();
-    
-    private:
-        static TTF_Font* defaultFont;
+public:
+    static void setDefaultFont(TTF_Font* font);
+    static TTF_Font* getDefaultFont();
+
+private:
+    static TTF_Font* defaultFont;
 };
+
 
 class UIButton : public UIElement {
-    public:
-        UIButton(const std::string& text, int x, int y, int w, int h, TTF_Font* f = nullptr);
-        void setOnClick(std::function<void()> callback);
-        void handleEvent(const SDL_Event& e) override;
-        void update(float dt) override;
-        void render(SDL_Renderer* renderer) override;
-        void setFont(TTF_Font* f);
-        bool isHovered() const;
-    
-    private:
-        std::string label;
-        std::function<void()> onClick;
-        bool hovered = false;
-        bool pressed = false;
-        TTF_Font* font = nullptr;
+public:
+    UIButton(const std::string& text, int x, int y, int w, int h, TTF_Font* f = nullptr);
+    void setOnClick(std::function<void()> callback);
+    void handleEvent(const SDL_Event& e) override;
+    void update(float dt) override;
+    void render(SDL_Renderer* renderer) override;
+    void setFont(TTF_Font* f);
+    bool isHovered() const;
+
+private:
+    std::string label;
+    std::function<void()> onClick;
+    bool hovered = false;
+    bool pressed = false;
+    TTF_Font* font = nullptr;
 };
+
 
 class UILabel : public UIElement {
-    public:
-        UILabel(const std::string& text, int x, int y, int w, int h, TTF_Font* font = nullptr);
-        void render(SDL_Renderer* renderer) override;
-        void update(float dt) override { (void)dt; }
-        void handleEvent(const SDL_Event& e) override { (void)e; }
-    
-        UILabel* setColor(SDL_Color newColor);
-        SDL_Color getColor() const;
-    
-    private:
-        std::string text;
-        SDL_Rect bounds;
-        TTF_Font* font = nullptr;
-        SDL_Color color = {255, 255, 255, 255};
+public:
+    UILabel(const std::string& text, int x, int y, int w, int h, TTF_Font* font = nullptr);
+    void render(SDL_Renderer* renderer) override;
+    void update(float dt) override { (void)dt; }
+    void handleEvent(const SDL_Event& e) override { (void)e; }
+
+    UILabel* setColor(SDL_Color newColor);
+    SDL_Color getColor() const;
+
+private:
+    std::string text;
+    SDL_Rect bounds;
+    TTF_Font* font = nullptr;
+    SDL_Color color = {255, 255, 255, 255};
 };
 
+
 class UICheckbox : public UIElement {
-    public:
-        UICheckbox(const std::string& label, int x, int y, int w, int h, bool* bind);
-    
-        void handleEvent(const SDL_Event& e) override;
-        bool isHovered() const override;
-        void update(float dt) override;
-        void render(SDL_Renderer* renderer) override;
-    
-    private:
-        std::string label;
-        SDL_Rect bounds;
-        bool hovered = false;
-        bool* linkedValue = nullptr;
+public:
+    UICheckbox(const std::string& label, int x, int y, int w, int h, bool* bind, TTF_Font* f);
+
+    void setFont(TTF_Font* f);
+
+    void handleEvent(const SDL_Event& e) override;
+    bool isHovered() const override;
+    void update(float dt) override;
+    void render(SDL_Renderer* renderer) override;
+
+private:
+    std::string label;
+    SDL_Rect bounds;
+    bool hovered = false;
+    bool* linkedValue = nullptr;
+    TTF_Font* font = nullptr;
 };
-    
+
+
 class UITextField : public UIElement {
-    public:
-        UITextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen = 32);
-        UITextField* setPlaceholder(const std::string& text);
-        bool isHovered() const override;
-        void handleEvent(const SDL_Event& e) override;
-        void update(float dt) override;
-        void render(SDL_Renderer* renderer) override;
-    
-        
-    
-    private:
-        std::string label;
-        SDL_Rect bounds;
-        std::string* linkedText;
-        int maxLength = 32;
-        bool hovered = false;
-        bool focused = false;
-        Uint32 lastBlinkTime = 0;
-        bool cursorVisible = true;
-        std::string placeholder;
-        SDL_Color placeholderColor = {160, 160, 160, 255};
+public:
+    UITextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen = 32);
+    UITextField* setPlaceholder(const std::string& text);
+    UITextField* setFont(TTF_Font* f);
+
+    bool isHovered() const override;
+    void handleEvent(const SDL_Event& e) override;
+    void update(float dt) override;
+    void render(SDL_Renderer* renderer) override;
+
+
+
+private:
+    std::string label;
+    SDL_Rect bounds;
+    std::string* linkedText;
+    int maxLength = 32;
+    bool hovered = false;
+    bool focused = false;
+    Uint32 lastBlinkTime = 0;
+    bool cursorVisible = true;
+    std::string placeholder;
+    SDL_Color placeholderColor = {160, 160, 160, 255};
+    TTF_Font* font = nullptr;
 };
-    
+
+
 class UISlider : public UIElement {
-    public:
-        UISlider(const std::string& label, int x, int y, int w, int h, float* bind, float min, float max);
-    
-        void handleEvent(const SDL_Event& e) override;
-        void update(float dt) override;
-        void render(SDL_Renderer* renderer) override;
-    
-    private:
-        std::string label;
-        SDL_Rect bounds;
-        float* linkedValue = nullptr;
-        float minValue = 0.0f;
-        float maxValue = 1.0f;
-        bool hovered = false;
-        bool dragging = false;
+public:
+    UISlider(const std::string& label, int x, int y, int w, int h, float* bind, float min, float max);
+
+    void handleEvent(const SDL_Event& e) override;
+    void update(float dt) override;
+    void render(SDL_Renderer* renderer) override;
+
+private:
+    std::string label;
+    SDL_Rect bounds;
+    float* linkedValue = nullptr;
+    float minValue = 0.0f;
+    float maxValue = 1.0f;
+    bool hovered = false;
+    bool dragging = false;
 };
 
 class UIManager {
@@ -133,118 +146,84 @@ class UIManager {
         void handleEvent(const SDL_Event& e);
         void update(float dt);
         void render(SDL_Renderer* renderer);
-    
+
     private:
         std::vector<std::shared_ptr<UIElement>> elements;
         SDL_Cursor* arrowCursor = nullptr;
         SDL_Cursor* handCursor = nullptr;
         SDL_Cursor* ibeamCursor = nullptr;
         bool handCursorActive = false;
+    };
+
+
+
+namespace FormUI {
+
+class Layout {
+public:
+    Layout(int x, int y, int spacing = 10)
+        : currentX(x), currentY(y), spacing(spacing) {}
+
+    std::shared_ptr<UILabel> addLabel(const std::string& text, int width = 300, int height = 30);
+    std::shared_ptr<UICheckbox> addCheckbox(const std::string& label, bool* value, int width = 300, int height = 30);
+    std::shared_ptr<UISlider> addSlider(const std::string& label, float* value, float min, float max, int width = 300, int height = 40);
+    std::shared_ptr<UITextField> addTextField(const std::string& label, std::string* bind, int maxLen = 32, int width = 300, int height = 40);
+    std::shared_ptr<UIButton> addButton(const std::string& label, std::function<void()> onClick, int width, int height, TTF_Font* font);
+    std::pair<std::shared_ptr<UILabel>, std::shared_ptr<UIButton>> addLabelButtonRow(
+        const std::string& labelText,
+        const std::string& buttonText,
+        std::function<void()> onClick,
+        int labelWidth = 200,
+        int buttonWidth = 100,
+        int height = 30,
+        TTF_Font* labelFont = nullptr,
+        TTF_Font* buttonFont = nullptr
+    );
+    void setDefaultFont(TTF_Font* font) { defaultFont = font; }
+    TTF_Font* getDefaultFont() const { return defaultFont; }
+
+
+private:
+    int currentX, currentY;
+    int spacing;
+    TTF_Font* defaultFont = nullptr;
 };
 
-namespace FormUI {
-
-    class Layout {
-    public:
-        Layout(int x, int y, int spacing = 10)
-            : currentX(x), currentY(y), spacing(spacing) {}
-    
-        std::shared_ptr<UILabel> addLabel(const std::string& text, int width = 300, int height = 30);
-        std::shared_ptr<UICheckbox> addCheckbox(const std::string& label, bool* value, int width = 300, int height = 30);
-        std::shared_ptr<UISlider> addSlider(const std::string& label, float* value, float min, float max, int width = 300, int height = 40);
-        std::shared_ptr<UITextField> addTextField(const std::string& label, std::string* bind, int maxLen = 32, int width = 300, int height = 40);
-        std::shared_ptr<UIButton> addButton(const std::string& label, std::function<void()> onClick, int width = 300, int height = 40);
-            
-    
-    private:
-        int currentX, currentY;
-        int spacing;
-    };
-    
 }
 
-namespace FormUI {
 
-    void Init(TTF_Font* defaultFont);
+
+namespace FormUI {
+    void Init(TTF_Font* defaultFont = nullptr);
     void Shutdown();
-    
-    std::shared_ptr<UIButton> Button(const std::string& label, int x, int y, int w, int h, std::function<void()> onClick);
-    
-    std::shared_ptr<UICheckbox> Checkbox(const std::string& label, int x, int y, int w, int h, bool* bind);
-    
+
+    std::shared_ptr<UIButton> Button( const std::string& label, int x, int y, int w, int h, std::function<void()> onClick = nullptr, TTF_Font* font = nullptr);
+    std::shared_ptr<UICheckbox> Checkbox(const std::string& label, int x, int y, int w, int h, bool* bind, TTF_Font* font);
     std::shared_ptr<UILabel> Label(const std::string& text, int x, int y, int w, int h, TTF_Font* font = nullptr);
-    
     std::shared_ptr<UISlider> Slider(const std::string& label, int x, int y, int w, int h, float* bind, float min, float max);
-    
     std::shared_ptr<UITextField> TextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen = 32);
-    
+
+
+
+
     void HandleEvent(const SDL_Event& e);
     void Update();
     void Render(SDL_Renderer* renderer);
-    
 }
 
 #ifdef SDLFORMUI_IMPLEMENTATION
 
-namespace FormUI {
-    static UIManager uiManager;
 
-    void Init(TTF_Font* defaultFont) {
-        if (defaultFont) {
-            UIConfig::setDefaultFont(defaultFont);
-        }
-        uiManager.initCursors();
-    }
+TTF_Font* UIConfig::defaultFont = nullptr;
 
-    void Shutdown() {
-        uiManager.cleanupCursors();
-    }
-
-    std::shared_ptr<UIButton> Button(const std::string& label, int x, int y, int w, int h, std::function<void()> onClick) {
-        auto btn = std::make_shared<UIButton>(label, x, y, w, h);
-        if (onClick) {
-            btn->setOnClick(onClick);
-        }
-        uiManager.addElement(btn);
-        return btn;
-    }
-
-    std::shared_ptr<UICheckbox> Checkbox(const std::string& label, int x, int y, int w, int h, bool* bind) {
-        auto box = std::make_shared<UICheckbox>(label, x, y, w, h, bind);
-        uiManager.addElement(box);
-        return box;
-    }
-    
-    std::shared_ptr<UILabel> Label(const std::string& text, int x, int y, int w, int h, TTF_Font* font) {
-        auto label = std::make_shared<UILabel>(text, x, y, w, h, font);
-        uiManager.addElement(label);
-        return label;
-    }
-
-    std::shared_ptr<UISlider> Slider(const std::string& label, int x, int y, int w, int h, float* bind, float min, float max) {
-        auto slider = std::make_shared<UISlider>(label, x, y, w, h, bind, min, max);
-        uiManager.addElement(slider);
-        return slider;
-    }
-
-    std::shared_ptr<UITextField> TextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen) {
-        auto field = std::make_shared<UITextField>(label, x, y, w, h, bind, maxLen);
-        uiManager.addElement(field);
-        return field;
-    }
-
-    void HandleEvent(const SDL_Event& e) {
-        uiManager.handleEvent(e);
-    }
-
-    void Update() {
-        uiManager.update(0.0f);
-    }
-
-    void Render(SDL_Renderer* renderer) {
-        uiManager.render(renderer);
-    }
+void UIConfig::setDefaultFont(TTF_Font* font) {
+    UIConfig::defaultFont = font;
 }
+
+TTF_Font* UIConfig::getDefaultFont() {
+    return UIConfig::defaultFont;
+}
+
 
 UIButton::UIButton(const std::string& text, int x, int y, int w, int h, TTF_Font* f)
     : label(text), font(f)
@@ -326,10 +305,15 @@ bool UIButton::isHovered() const {
     return hovered;
 }
 
-UICheckbox::UICheckbox(const std::string& label, int x, int y, int w, int h, bool* bind)
-    : label(label), linkedValue(bind)
+
+UICheckbox::UICheckbox(const std::string& label, int x, int y, int w, int h, bool* bind, TTF_Font* f)
+    : label(label), linkedValue(bind), font(f)
 {
     bounds = { x, y, w, h };
+}
+
+void UICheckbox::setFont(TTF_Font* f) {
+    font = f;
 }
 
 void UICheckbox::handleEvent(const SDL_Event& e) {
@@ -355,12 +339,12 @@ void UICheckbox::update(float) {
 }
 
 void UICheckbox::render(SDL_Renderer* renderer) {
-    TTF_Font* font = UIConfig::getDefaultFont();
-    if (!font) return;
+    TTF_Font* activeFont = font ? font : UIConfig::getDefaultFont();
+    if (!activeFont) return;
 
     SDL_Color textColor = { 255, 255, 255, 255 };
 
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, label.c_str(), textColor);
+    SDL_Surface* textSurface = TTF_RenderText_Blended(activeFont, label.c_str(), textColor);
     if (!textSurface) return;
 
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
@@ -407,15 +391,6 @@ void UICheckbox::render(SDL_Renderer* renderer) {
     SDL_DestroyTexture(textTexture);
 }
 
-TTF_Font* UIConfig::defaultFont = nullptr;
-
-void UIConfig::setDefaultFont(TTF_Font* font) {
-    UIConfig::defaultFont = font;
-}
-
-TTF_Font* UIConfig::getDefaultFont() {
-    return UIConfig::defaultFont;
-}
 
 UILabel::UILabel(const std::string& text, int x, int y, int w, int h, TTF_Font* font)
     : text(text), font(font)
@@ -452,92 +427,144 @@ SDL_Color UILabel::getColor() const {
     return color;
 }
 
-namespace FormUI {
-    std::shared_ptr<UILabel> Layout::addLabel(const std::string& text, int width, int height) {
-        auto label = FormUI::Label(text, currentX, currentY, width, height);
-        currentY += height + spacing;
-        return label;
-    }
-    
-    std::shared_ptr<UICheckbox> Layout::addCheckbox(const std::string& label, bool* value, int width, int height) {
-        auto checkbox = FormUI::Checkbox(label, currentX, currentY, width, height, value);
-        currentY += height + spacing;
-        return checkbox;
-    }
-    
-    std::shared_ptr<UISlider> Layout::addSlider(const std::string& label, float* value, float min, float max, int width, int height) {
-        auto slider = FormUI::Slider(label, currentX, currentY, width, height, value, min, max);
-        currentY += height + spacing;
-        return slider;
-    }
-    
-    std::shared_ptr<UITextField> Layout::addTextField(const std::string& label, std::string* bind, int maxLen, int width, int height) {
-        auto textField = FormUI::TextField(label, currentX, currentY, width, height, bind, maxLen);
-        currentY += height + spacing;
-        return textField;
-    }
-    
-    std::shared_ptr<UIButton> Layout::addButton(const std::string& label, std::function<void()> onClick, int width, int height) {
-        auto button = FormUI::Button(label, currentX, currentY, width, height, onClick);
-        currentY += height + spacing;
-        return button;
-    }
+
+UITextField::UITextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen)
+    : label(label), linkedText(bind), maxLength(maxLen)
+{
+    bounds = { x, y, w, h };
 }
 
-void UIManager::addElement(std::shared_ptr<UIElement> el) {
-    elements.push_back(el);
+UITextField* UITextField::setPlaceholder(const std::string& text) {
+    placeholder = text;
+    return this;
 }
 
-void UIManager::handleEvent(const SDL_Event& e) {
-    for (auto& el : elements) {
-        if (el->visible)
-            el->handleEvent(e);
+UITextField* UITextField::setFont(TTF_Font* f) {
+    font = f;
+    return this;
+}
+
+bool UITextField::isHovered() const {
+    return hovered;
+}
+
+void UITextField::handleEvent(const SDL_Event& e) {
+    if (!linkedText) return;
+
+    if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+        int mx = e.button.x;
+        int my = e.button.y;
+        SDL_Point point = { mx, my };
+        focused = SDL_PointInRect(&point, &bounds);
     }
-}
 
-void UIManager::update(float dt) {
-    SDL_Cursor* cursorToUse = arrowCursor;
-
-    for (auto& el : elements) {
-        if (!el->visible) continue;
-
-        el->update(dt);
-
-        if (el->isHovered()) {
-            if (dynamic_cast<UITextField*>(el.get())) {
-                cursorToUse = ibeamCursor;
-            } else if (dynamic_cast<UIButton*>(el.get()) || dynamic_cast<UICheckbox*>(el.get())) {
-                cursorToUse = handCursor;
-            }
+    if (focused && e.type == SDL_TEXTINPUT) {
+        if (linkedText->length() < static_cast<size_t>(maxLength)) {
+            linkedText->append(e.text.text);
         }
     }
 
-    if (SDL_GetCursor() != cursorToUse) {
-        SDL_SetCursor(cursorToUse);
+    if (focused && e.type == SDL_KEYDOWN) {
+        if (e.key.keysym.sym == SDLK_BACKSPACE && !linkedText->empty()) {
+            linkedText->pop_back();
+        } else if (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_KP_ENTER) {
+            focused = false;
+        }
+    }
+}
+
+void UITextField::update(float) {
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+    SDL_Point point = { mx, my };
+    hovered = SDL_PointInRect(&point, &bounds);
+
+    if (focused) {
+        Uint32 now = SDL_GetTicks();
+        if (now - lastBlinkTime >= 500) {
+            cursorVisible = !cursorVisible;
+            lastBlinkTime = now;
+        }
+    } else {
+        cursorVisible = false;
+        lastBlinkTime = SDL_GetTicks();
+    }
+}
+
+
+void UITextField::render(SDL_Renderer* renderer) {
+    TTF_Font* activeFont = font ? font : UIConfig::getDefaultFont();
+    if (!activeFont || !linkedText) return;
+
+    SDL_Color textColor = { 255, 255, 255, 255 };
+
+    SDL_Surface* labelSurface = TTF_RenderText_Blended(activeFont, label.c_str(), textColor);
+    SDL_Texture* labelTexture = SDL_CreateTextureFromSurface(renderer, labelSurface);
+    SDL_Rect labelRect = {
+        bounds.x,
+        bounds.y - labelSurface->h - 4,
+        labelSurface->w,
+        labelSurface->h
+    };
+    SDL_RenderCopy(renderer, labelTexture, nullptr, &labelRect);
+    SDL_FreeSurface(labelSurface);
+    SDL_DestroyTexture(labelTexture);
+
+    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+    SDL_RenderFillRect(renderer, &bounds);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderDrawRect(renderer, &bounds);
+
+    SDL_Rect textRect;
+
+    std::string textToRender = *linkedText;
+    SDL_Color colorToUse = textColor;
+
+    if (linkedText->empty() && !focused && !placeholder.empty()) {
+        textToRender = placeholder;
+        colorToUse = placeholderColor;
+    }
+
+    SDL_Surface* textSurface = TTF_RenderText_Blended(font, textToRender.c_str(), colorToUse);
+    if (textSurface) {
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        textRect = {
+            bounds.x + 5,
+            bounds.y + (bounds.h - textSurface->h) / 2,
+            textSurface->w,
+            textSurface->h
+        };
+        SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+        SDL_FreeSurface(textSurface);
+        SDL_DestroyTexture(textTexture);
+    } else {
+        textRect = {
+            bounds.x + 5,
+            bounds.y + bounds.h / 4,
+            0,
+            bounds.h / 2
+        };
+    }
+
+    Uint32 now = SDL_GetTicks();
+    if (now - lastBlinkTime >= 500) {
+        cursorVisible = !cursorVisible;
+        lastBlinkTime = now;
+    }
+
+    if (focused && cursorVisible) {
+        int cursorX = textRect.x + textRect.w + 2;
+        int cursorY = textRect.y;
+        int cursorH = textRect.h;
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_Rect cursorRect = { cursorX, cursorY, 2, cursorH };
+        SDL_RenderFillRect(renderer, &cursorRect);
     }
 }
 
 
 
-void UIManager::render(SDL_Renderer* renderer) {
-    for (auto& el : elements) {
-        if (el->visible)
-            el->render(renderer);
-    }
-}
-
-void UIManager::initCursors() {
-    arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-    handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-    ibeamCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-    SDL_SetCursor(arrowCursor);
-}
-
-void UIManager::cleanupCursors() {
-    SDL_FreeCursor(arrowCursor);
-    SDL_FreeCursor(handCursor);
-    SDL_FreeCursor(ibeamCursor);
-}
 
 UISlider::UISlider(const std::string& label, int x, int y, int w, int h, float* bind, float min, float max)
     : label(label), linkedValue(bind), minValue(min), maxValue(max)
@@ -614,133 +641,173 @@ void UISlider::render(SDL_Renderer* renderer) {
     SDL_DestroyTexture(valueTexture);
 }
 
-UITextField::UITextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen)
-    : label(label), linkedText(bind), maxLength(maxLen)
+
+void UIManager::addElement(std::shared_ptr<UIElement> el) {
+    elements.push_back(el);
+}
+
+void UIManager::handleEvent(const SDL_Event& e) {
+    for (auto& el : elements) {
+        if (el->visible)
+            el->handleEvent(e);
+    }
+}
+
+void UIManager::update(float dt) {
+    SDL_Cursor* cursorToUse = arrowCursor;
+
+    for (auto& el : elements) {
+        if (!el->visible) continue;
+
+        el->update(dt);
+
+        if (el->isHovered()) {
+            if (dynamic_cast<UITextField*>(el.get())) {
+                cursorToUse = ibeamCursor;
+            } else if (dynamic_cast<UIButton*>(el.get()) || dynamic_cast<UICheckbox*>(el.get())) {
+                cursorToUse = handCursor;
+            }
+        }
+    }
+
+    if (SDL_GetCursor() != cursorToUse) {
+        SDL_SetCursor(cursorToUse);
+    }
+}
+
+
+
+void UIManager::render(SDL_Renderer* renderer) {
+    for (auto& el : elements) {
+        if (el->visible)
+            el->render(renderer);
+    }
+}
+
+void UIManager::initCursors() {
+    arrowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    handCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    ibeamCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+    SDL_SetCursor(arrowCursor);
+}
+
+void UIManager::cleanupCursors() {
+    SDL_FreeCursor(arrowCursor);
+    SDL_FreeCursor(handCursor);
+    SDL_FreeCursor(ibeamCursor);
+}
+
+
+namespace FormUI {
+
+std::shared_ptr<UILabel> Layout::addLabel(const std::string& text, int width, int height) {
+    auto labelEl = FormUI::Label(text, currentX, currentY, width, height, defaultFont);
+    currentY += height + spacing;
+    return labelEl;
+}
+
+std::shared_ptr<UICheckbox> Layout::addCheckbox(const std::string& label, bool* value, int width, int height) {
+    auto checkbox = FormUI::Checkbox(label, currentX, currentY, width, height, value, defaultFont);
+    currentY += height + spacing;
+    return checkbox;
+}
+
+std::shared_ptr<UISlider> Layout::addSlider(const std::string& label, float* value, float min, float max, int width, int height) {
+    auto slider = FormUI::Slider(label, currentX, currentY, width, height, value, min, max);
+    currentY += height + spacing;
+    return slider;
+}
+
+std::shared_ptr<UITextField> Layout::addTextField(const std::string& label, std::string* bind, int maxLen, int width, int height) {
+    auto textField = FormUI::TextField(label, currentX, currentY, width, height, bind, maxLen);
+    textField->setFont(defaultFont);
+    currentY += height + spacing;
+    return textField;
+}
+
+std::shared_ptr<UIButton> Layout::addButton(const std::string& label, std::function<void()> onClick, int width, int height, TTF_Font* font)
 {
-    bounds = { x, y, w, h };
+    auto button = FormUI::Button(label, currentX, currentY, width, height, onClick, font ? font : defaultFont);
+    currentY += height + spacing;
+    return button;
 }
 
-UITextField* UITextField::setPlaceholder(const std::string& text) {
-    placeholder = text;
-    return this;
+std::pair<std::shared_ptr<UILabel>, std::shared_ptr<UIButton>> Layout::addLabelButtonRow(
+    const std::string& labelText,
+    const std::string& buttonText,
+    std::function<void()> onClick,
+    int labelWidth,
+    int buttonWidth,
+    int height,
+    TTF_Font* labelFont,
+    TTF_Font* buttonFont
+) {
+    auto label = FormUI::Label(labelText, currentX, currentY, labelWidth, height, labelFont ? labelFont : defaultFont);
+    auto button = FormUI::Button(buttonText, currentX + labelWidth + 10, currentY, buttonWidth, height, onClick, buttonFont ? buttonFont : defaultFont);
+    currentY += height + spacing;
+    return { label, button };
 }
 
-bool UITextField::isHovered() const {
-    return hovered;
+
 }
 
-void UITextField::handleEvent(const SDL_Event& e) {
-    if (!linkedText) return;
 
-    if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
-        int mx = e.button.x;
-        int my = e.button.y;
-        SDL_Point point = { mx, my };
-        focused = SDL_PointInRect(&point, &bounds);
-    }
+namespace FormUI {
+    static UIManager uiManager;
 
-    if (focused && e.type == SDL_TEXTINPUT) {
-        if (linkedText->length() < static_cast<size_t>(maxLength)) {
-            linkedText->append(e.text.text);
+    void Init(TTF_Font* defaultFont) {
+        if (defaultFont) {
+            UIConfig::setDefaultFont(defaultFont);
         }
+        uiManager.initCursors();
     }
 
-    if (focused && e.type == SDL_KEYDOWN) {
-        if (e.key.keysym.sym == SDLK_BACKSPACE && !linkedText->empty()) {
-            linkedText->pop_back();
-        } else if (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_KP_ENTER) {
-            focused = false;
-        }
-    }
-}
-
-void UITextField::update(float) {
-    int mx, my;
-    SDL_GetMouseState(&mx, &my);
-    SDL_Point point = { mx, my };
-    hovered = SDL_PointInRect(&point, &bounds);
-
-    if (focused) {
-        Uint32 now = SDL_GetTicks();
-        if (now - lastBlinkTime >= 500) {
-            cursorVisible = !cursorVisible;
-            lastBlinkTime = now;
-        }
-    } else {
-        cursorVisible = false;
-        lastBlinkTime = SDL_GetTicks();
-    }
-}
-
-
-void UITextField::render(SDL_Renderer* renderer) {
-    TTF_Font* font = UIConfig::getDefaultFont();
-    if (!font || !linkedText) return;
-
-    SDL_Color textColor = { 255, 255, 255, 255 };
-
-    SDL_Surface* labelSurface = TTF_RenderText_Blended(font, label.c_str(), textColor);
-    SDL_Texture* labelTexture = SDL_CreateTextureFromSurface(renderer, labelSurface);
-    SDL_Rect labelRect = {
-        bounds.x,
-        bounds.y - labelSurface->h - 4,
-        labelSurface->w,
-        labelSurface->h
-    };
-    SDL_RenderCopy(renderer, labelTexture, nullptr, &labelRect);
-    SDL_FreeSurface(labelSurface);
-    SDL_DestroyTexture(labelTexture);
-
-    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
-    SDL_RenderFillRect(renderer, &bounds);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(renderer, &bounds);
-
-    SDL_Rect textRect;
-
-    std::string textToRender = *linkedText;
-    SDL_Color colorToUse = textColor;
-    
-    if (linkedText->empty() && !focused && !placeholder.empty()) {
-        textToRender = placeholder;
-        colorToUse = placeholderColor;
-    }
-    
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, textToRender.c_str(), colorToUse);
-    if (textSurface) {
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-        textRect = {
-            bounds.x + 5,
-            bounds.y + (bounds.h - textSurface->h) / 2,
-            textSurface->w,
-            textSurface->h
-        };
-        SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
-        SDL_FreeSurface(textSurface);
-        SDL_DestroyTexture(textTexture);
-    } else {
-        textRect = {
-            bounds.x + 5,
-            bounds.y + bounds.h / 4,
-            0,
-            bounds.h / 2
-        };
+    void Shutdown() {
+        uiManager.cleanupCursors();
     }
 
-    Uint32 now = SDL_GetTicks();
-    if (now - lastBlinkTime >= 500) {
-        cursorVisible = !cursorVisible;
-        lastBlinkTime = now;
+    std::shared_ptr<UIButton> Button(const std::string& label, int x, int y, int w, int h, std::function<void()> onClick, TTF_Font* font)
+    {
+        auto btn = std::make_shared<UIButton>(label, x, y, w, h, font);
+        if (onClick) btn->setOnClick(onClick);
+        uiManager.addElement(btn);
+        return btn;
     }
 
-    if (focused && cursorVisible) {
-        int cursorX = textRect.x + textRect.w + 2;
-        int cursorY = textRect.y;
-        int cursorH = textRect.h;
+    std::shared_ptr<UICheckbox> Checkbox(const std::string& label, int x, int y, int w, int h, bool* bind, TTF_Font* font) {
+        auto box = std::make_shared<UICheckbox>(label, x, y, w, h, bind, font);
+        uiManager.addElement(box);
+        return box;
+    }
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_Rect cursorRect = { cursorX, cursorY, 2, cursorH };
-        SDL_RenderFillRect(renderer, &cursorRect);
+    std::shared_ptr<UILabel> Label(const std::string& text, int x, int y, int w, int h, TTF_Font* font) {
+        auto label = std::make_shared<UILabel>(text, x, y, w, h, font);
+        uiManager.addElement(label);
+        return label;
+    }
+
+    std::shared_ptr<UISlider> Slider(const std::string& label, int x, int y, int w, int h, float* bind, float min, float max) {
+        auto slider = std::make_shared<UISlider>(label, x, y, w, h, bind, min, max);
+        uiManager.addElement(slider);
+        return slider;
+    }
+
+    std::shared_ptr<UITextField> TextField(const std::string& label, int x, int y, int w, int h, std::string* bind, int maxLen) {
+        auto field = std::make_shared<UITextField>(label, x, y, w, h, bind, maxLen);
+        uiManager.addElement(field);
+        return field;
+    }
+
+    void HandleEvent(const SDL_Event& e) {
+        uiManager.handleEvent(e);
+    }
+
+    void Update() {
+        uiManager.update(0.0f);
+    }
+
+    void Render(SDL_Renderer* renderer) {
+        uiManager.render(renderer);
     }
 }
 

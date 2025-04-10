@@ -11,3 +11,6 @@ CMakeCache.txt
 *.tmp
 
 .vscode/
+
+SDL2/
+SDL2/**/*
