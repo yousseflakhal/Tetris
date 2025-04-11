@@ -75,7 +75,6 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         [this]() {
             resetGame();
             isPaused = false;
-            resumeCountdownActive = false;
         }
     );
 
@@ -151,26 +150,52 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     FormUI::Layout layout(windowWidth / 2 - 150, 200, 10);
 
-    std::vector<std::string> labels = {
-        "MOVE RIGHT", "MOVE LEFT", "ROTATE RIGHT", "ROTATE LEFT",
-        "SOFT DROP", "HARD DROP", "HOLD"
+    keyBindings = {
+        {Action::MoveRight, SDLK_RIGHT},
+        {Action::MoveLeft, SDLK_LEFT},
+        {Action::RotateRight, SDLK_UP},
+        {Action::RotateLeft, SDLK_z},
+        {Action::SoftDrop, SDLK_DOWN},
+        {Action::HardDrop, SDLK_SPACE},
+        {Action::Hold, SDLK_c}
+    };
+
+    auto keyToString = [](SDL_Keycode key) {
+        return SDL_GetKeyName(key);
     };
     
-    std::vector<std::string> keys = {
-        "RIGHT ARROW", "LEFT ARROW", "UP ARROW", "Z",
-        "DOWN ARROW", "SPACE", "C"
+    controlMappings = {
+        {"MOVE RIGHT", Action::MoveRight},
+        {"MOVE LEFT", Action::MoveLeft},
+        {"ROTATE RIGHT", Action::RotateRight},
+        {"ROTATE LEFT", Action::RotateLeft},
+        {"SOFT DROP", Action::SoftDrop},
+        {"HARD DROP", Action::HardDrop},
+        {"HOLD", Action::Hold}
     };
     
-    for (size_t i = 0; i < labels.size(); ++i) {
-        auto [label, button] = layout.addLabelButtonRow(labels[i], keys[i], [](){}, 200, 100, 30, smallFont,smallFont);
+    for (size_t i = 0; i < controlMappings.size(); ++i) {
+        const auto& [labelText, action] = controlMappings[i];
+        std::string keyLabel = keyToString(keyBindings[action]);
+    
+        auto buttonCallback = [this, action, i]() {
+            waitingForKey = true;
+            actionToRebind = action;
+            controlButtons[i]->setText("Press a key...");
+        };
+    
+        auto [label, button] = layout.addLabelButtonRow(labelText, keyLabel, buttonCallback, 200, 100, 30, smallFont, smallFont);
         label->visible = false;
         button->visible = false;
         controlLabels.push_back(label);
         controlButtons.push_back(button);
     }
+    
 
 
     spawnNewShape();
+    resumeCountdownActive = true;
+    countdownStartTime = SDL_GetTicks();
 }
 
 Game::~Game() {
@@ -198,22 +223,42 @@ void Game::processInput() {
     while (SDL_PollEvent(&e)) {
         inputHandler.handleEvent(e);
         FormUI::HandleEvent(e);
-
+    
         if (inputHandler.isQuitRequested()) {
             running = false;
             return;
         }
+    
+        if (currentScreen == Screen::Settings && e.type == SDL_KEYDOWN && !e.key.repeat) {
+            if (waitingForKey) {
+                SDL_Keycode key = e.key.keysym.sym;
+                if (key == SDLK_ESCAPE) {
+                    waitingForKey = false;
+                    for (size_t i = 0; i < controlButtons.size(); ++i) {
+                        if (controlMappings[i].second == actionToRebind) {
+                            controlButtons[i]->setText(SDL_GetKeyName(keyBindings[actionToRebind]));
+                        }
+                    }
+                    return;
+                }
+        
+                keyBindings[actionToRebind] = key;
+                waitingForKey = false;
+        
+                for (size_t i = 0; i < controlButtons.size(); ++i) {
+                    if (controlMappings[i].second == actionToRebind) {
+                        controlButtons[i]->setText(SDL_GetKeyName(key));
+                    }
+                }
+            } else {
+                if (e.key.keysym.sym == SDLK_ESCAPE) {
+                    currentScreen = Screen::Main;
+                }
+            }
+        }
     }
 
     if (resumeCountdownActive) {
-        return;
-    }
-
-    if (currentScreen == Screen::Settings) {
-        if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
-            currentScreen = Screen::Main;
-            inputHandler.clearKeyState(SDLK_ESCAPE);
-        }
         return;
     }
 
@@ -248,7 +293,7 @@ void Game::processInput() {
     static Uint32 leftLastMoveTime = 0;
     static bool leftFirstRepeat = true;
 
-    if (inputHandler.isKeyPressed(SDLK_LEFT)) {
+    if (inputHandler.isKeyPressed(keyBindings[Action::MoveLeft])) {
         if (!leftKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                 currentShape.moveLeft();
@@ -278,7 +323,7 @@ void Game::processInput() {
     static Uint32 rightLastMoveTime = 0;
     static bool rightFirstRepeat = true;
 
-    if (inputHandler.isKeyPressed(SDLK_RIGHT)) {
+    if (inputHandler.isKeyPressed(keyBindings[Action::MoveRight])) {
         if (!rightKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                 currentShape.moveRight(board.getCols());
@@ -333,7 +378,7 @@ void Game::processInput() {
     }
 
     static bool rotationKeyHandled = false;
-    if (inputHandler.isKeyJustPressed(SDLK_UP)) {
+    if (inputHandler.isKeyJustPressed(keyBindings[Action::RotateRight])) {
         if (!rotationKeyHandled) {
             currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
             rotationKeyHandled = true;
@@ -342,7 +387,11 @@ void Game::processInput() {
         rotationKeyHandled = false;
     }
 
-    if (inputHandler.isKeyPressed(SDLK_DOWN) && currentTime - lastDownMoveTime >= downMoveDelay) {
+    if (inputHandler.isKeyJustPressed(keyBindings[Action::RotateLeft])) {
+        currentShape.rotateCounterClockwise(board.getGrid(), board.getCols(), board.getRows());
+    }
+
+    if (inputHandler.isKeyPressed(keyBindings[Action::SoftDrop]) && currentTime - lastDownMoveTime >= downMoveDelay) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
             updateScore(0, 1, false);
@@ -350,17 +399,26 @@ void Game::processInput() {
         }
     }
 
-    // if (inputHandler.isKeyJustPressed(SDLK_SPACE)) {
-    //     int dropDistance = 0;
-    //     while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
-    //         currentShape.moveDown();
-    //         dropDistance++;
-    //     }
-    //     board.placeShape(currentShape);
-    //     int clearedLines = board.clearFullLines();
-    //     updateScore(clearedLines, dropDistance, true);
-    //     spawnNewShape();
-    // }
+    if (inputHandler.isKeyJustPressed(keyBindings[Action::HardDrop])) {
+        int dropDistance = 0;
+        while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
+            currentShape.moveDown();
+            dropDistance++;
+        }
+        board.placeShape(currentShape);
+        int clearedLines = board.clearFullLines();
+        updateScore(clearedLines, dropDistance, true);
+        spawnNewShape();
+        inputHandler.clearKeyState(SDLK_SPACE);
+    }
+
+    if (currentScreen == Screen::Settings) {
+        if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
+            currentScreen = Screen::Main;
+            inputHandler.clearKeyState(SDLK_ESCAPE);
+        }
+        return;
+    }
 
     if (mouseControlEnabled && inputHandler.isMouseClicked()) {
         if (ignoreNextMouseClick) {
@@ -378,7 +436,7 @@ void Game::processInput() {
         spawnNewShape();
     }
 
-    if (inputHandler.isKeyJustPressed(SDLK_c) || inputHandler.isKeyJustPressed(SDLK_LSHIFT)) {
+    if (inputHandler.isKeyJustPressed(keyBindings[Action::Hold])) {
         holdPiece();
     }
 }
@@ -826,6 +884,8 @@ void Game::resetGame() {
     spawnNewShape();
     running = true;
     ignoreNextMouseClick = true;
+    resumeCountdownActive = true;
+    countdownStartTime = SDL_GetTicks();
 }
 
 void Game::updateSpeed() {

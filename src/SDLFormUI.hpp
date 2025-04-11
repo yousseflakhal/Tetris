@@ -39,6 +39,8 @@ class UIButton : public UIElement {
 public:
     UIButton(const std::string& text, int x, int y, int w, int h, TTF_Font* f = nullptr);
     void setOnClick(std::function<void()> callback);
+    void setText(const std::string& newText);
+    const std::string& getText() const;
     void handleEvent(const SDL_Event& e) override;
     void update(float dt) override;
     void render(SDL_Renderer* renderer) override;
@@ -233,6 +235,14 @@ UIButton::UIButton(const std::string& text, int x, int y, int w, int h, TTF_Font
 
 void UIButton::setOnClick(std::function<void()> callback) {
     onClick = callback;
+}
+
+void UIButton::setText(const std::string& newText) {
+    label = newText;
+}
+
+const std::string& UIButton::getText() const {
+    return label;
 }
 
 void UIButton::handleEvent(const SDL_Event& e) {

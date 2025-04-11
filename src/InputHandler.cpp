@@ -5,8 +5,13 @@ InputHandler::InputHandler()
 
 void InputHandler::beginFrame() {
     mouseClicked = false;
+    keysJustPressed.clear();
 }
 void InputHandler::handleEvent(const SDL_Event &event) {
+    if (event.type == SDL_KEYDOWN && !event.key.repeat) {
+        keyStates[event.key.keysym.sym] = true;
+        keysJustPressed.insert(event.key.keysym.sym);
+    }
     if (event.type == SDL_KEYDOWN) {
         if (!event.key.repeat) {
             keyStates[event.key.keysym.sym] = true;
@@ -39,14 +44,7 @@ bool InputHandler::isQuitRequested() const {
 }
 
 bool InputHandler::isKeyJustPressed(SDL_Keycode key) const {
-    auto keyIt = keyStates.find(key);
-    auto repeatIt = keyRepeatStates.find(key);
-    
-    if (keyIt == keyStates.end() || repeatIt == keyRepeatStates.end()) {
-        return false;
-    }
-    
-    return keyIt->second && !repeatIt->second;
+    return keysJustPressed.find(key) != keysJustPressed.end();
 }
 
 int InputHandler::getMouseX() const {
@@ -68,4 +66,8 @@ void InputHandler::resetQuitRequested() {
 void InputHandler::clearKeyState(SDL_Keycode key) {
     keyStates[key] = false;
     keyRepeatStates[key] = false;
+}
+
+const std::unordered_map<SDL_Keycode, bool>& InputHandler::getKeyStates() const {
+    return keyStates;
 }

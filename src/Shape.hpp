@@ -16,7 +16,7 @@ public:
     void moveRight(int boardWidth);
 
     void rotateClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight);
-    void rotateCounterClockwise(const std::vector<int>& board, int boardWidth, int boardHeight);
+    void rotateCounterClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight);
 
     const std::vector<std::pair<int, int>>& getCoords() const;
     SDL_Color getColor() const { return color; }

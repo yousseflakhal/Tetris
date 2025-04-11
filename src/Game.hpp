@@ -14,6 +14,15 @@
 
 class Game {
 public:
+    enum class Action {
+        MoveRight,
+        MoveLeft,
+        RotateRight,
+        RotateLeft,
+        SoftDrop,
+        HardDrop,
+        Hold
+    };
     Game(int width, int height, int cellSize);
     ~Game();
     void run();
@@ -51,6 +60,8 @@ private:
     bool resumeCountdownActive;
     Uint32 countdownStartTime;
     bool mouseControlEnabled;
+    bool waitingForKey = false;
+    Action actionToRebind;
     Screen currentScreen;
 
     std::shared_ptr<UIButton> newGameBtn;
@@ -62,6 +73,9 @@ private:
     std::shared_ptr<UICheckbox> mouseControlCheckbox;
     std::vector<std::shared_ptr<UILabel>> controlLabels;
     std::vector<std::shared_ptr<UIButton>> controlButtons;
+    std::vector<std::pair<std::string, Action>> controlMappings;
+    std::unordered_map<Action, SDL_Keycode> keyBindings;
+
 
 
     void processInput();

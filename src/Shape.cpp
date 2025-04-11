@@ -180,3 +180,30 @@ std::vector<std::pair<int, int>> Shape::getLocalCoords() const {
     }
     return local;
 }
+
+void Shape::rotateCounterClockwise(const std::vector<std::vector<int>>& grid, int cols, int rows) {
+    auto newCoords = coords;
+    auto pivot = coords[1];
+
+    for (auto& p : newCoords) {
+        int x = p.first - pivot.first;
+        int y = p.second - pivot.second;
+
+        int rotatedX = y;
+        int rotatedY = -x;
+
+        p.first = pivot.first + rotatedX;
+        p.second = pivot.second + rotatedY;
+    }
+
+    for (const auto& p : newCoords) {
+        if (p.first < 0 || p.first >= cols || p.second < 0 || p.second >= rows) {
+            return;
+        }
+        if (grid[p.second][p.first] != 0) {
+            return;
+        }
+    }
+
+    coords = newCoords;
+}
