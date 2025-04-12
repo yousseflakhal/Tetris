@@ -26,15 +26,15 @@ Shape::Shape(Type type, int startX, int startY, SDL_Color color)
 std::vector<std::pair<int, int>> Shape::getDefaultCoordsForType(Type type) {
     switch (type) {
         case Type::O:
-            return {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+            return {{-1, 0}, {0, 0}, {-1, 1}, {0, 1}};
         case Type::I:
-            return {{0, 0}, {-1, 0}, {1, 0}, {2, 0}};
+            return {{-1, 0}, {-2, 0}, {0, 0}, {1, 0}};
         case Type::S:
             return {{0, 0}, {-1, 0}, {0, 1}, {1, 1}};
         case Type::Z:
             return {{0, 0}, {1, 0}, {0, 1}, {-1, 1}};
         case Type::L:
-            return {{0, 1}, {0, 0}, {0, 2}, {1, 2}};
+            return {{-1, 1}, {-1, 0}, {-1, 2}, {0, 2}};
         case Type::J:
             return {{0, 0}, {0, 1}, {0, 2}, {-1, 2}};
         case Type::T:
