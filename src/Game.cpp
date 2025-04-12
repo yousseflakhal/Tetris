@@ -856,14 +856,17 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
 void Game::holdPiece() {
     if (!canHold) return;
 
+    Shape::Type currentType = currentShape.getType();
+    SDL_Color currentColor = currentShape.getColor();
+
     if (heldShape.has_value()) {
-        std::swap(currentShape, heldShape.value());
-        currentShape.setPosition(board.getCols() / 2, 0);
-        currentShape.resetRotation();
-        heldShape->setPosition(0, 0);
+        Shape::Type heldType = heldShape->getType();
+        SDL_Color heldColor = heldShape->getColor();
+
+        heldShape = Shape(currentType, 0, 0, currentColor);
+        currentShape = Shape(heldType, board.getCols() / 2, 0, heldColor);
     } else {
-        heldShape = currentShape;
-        heldShape->setPosition(0, 0);
+        heldShape = Shape(currentType, 0, 0, currentColor);
         spawnNewShape();
     }
 
