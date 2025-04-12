@@ -255,8 +255,9 @@ void Game::processInput() {
     
         if (currentScreen == Screen::Settings && e.type == SDL_KEYDOWN && !e.key.repeat) {
             if (waitingForKey) {
-                SDL_Keycode key = e.key.keysym.sym;
-                if (key == SDLK_ESCAPE) {
+                SDL_Keycode newKey = e.key.keysym.sym;
+            
+                if (newKey == SDLK_ESCAPE) {
                     waitingForKey = false;
                     for (size_t i = 0; i < controlButtons.size(); ++i) {
                         if (controlMappings[i].second == actionToRebind) {
@@ -265,13 +266,31 @@ void Game::processInput() {
                     }
                     return;
                 }
-        
-                keyBindings[actionToRebind] = key;
+            
+                bool keyAlreadyUsed = false;
+                for (const auto& [action, boundKey] : keyBindings) {
+                    if (boundKey == newKey && action != actionToRebind) {
+                        keyAlreadyUsed = true;
+                        break;
+                    }
+                }
+            
+                if (keyAlreadyUsed) {
+                    waitingForKey = false;
+                    for (size_t i = 0; i < controlButtons.size(); ++i) {
+                        if (controlMappings[i].second == actionToRebind) {
+                            controlButtons[i]->setText(SDL_GetKeyName(keyBindings[actionToRebind]));
+                        }
+                    }
+                    return;
+                }
+            
+                keyBindings[actionToRebind] = newKey;
                 waitingForKey = false;
-        
+            
                 for (size_t i = 0; i < controlButtons.size(); ++i) {
                     if (controlMappings[i].second == actionToRebind) {
-                        controlButtons[i]->setText(SDL_GetKeyName(key));
+                        controlButtons[i]->setText(SDL_GetKeyName(newKey));
                     }
                 }
             } else {
