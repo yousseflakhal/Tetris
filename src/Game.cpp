@@ -190,6 +190,30 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         controlLabels.push_back(label);
         controlButtons.push_back(button);
     }
+
+    resetControlsBtn = FormUI::Button(
+        "Reset Controls",
+        windowWidth / 2 - 100,
+        windowHeight - 100,
+        200,
+        40,
+        [this]() {
+            keyBindings = {
+                {Action::MoveRight, SDLK_RIGHT},
+                {Action::MoveLeft, SDLK_LEFT},
+                {Action::RotateRight, SDLK_UP},
+                {Action::RotateLeft, SDLK_z},
+                {Action::SoftDrop, SDLK_DOWN},
+                {Action::HardDrop, SDLK_SPACE},
+                {Action::Hold, SDLK_c}
+            };
+            for (size_t i = 0; i < controlButtons.size(); ++i) {
+                controlButtons[i]->setText(SDL_GetKeyName(keyBindings[controlMappings[i].second]));
+            }
+        },
+        smallFont
+    );
+    resetControlsBtn->visible = false;
     
 
 
@@ -530,6 +554,7 @@ void Game::render() {
         mouseControlCheckbox->visible = true;
         for (auto& label : controlLabels) label->visible = true;
         for (auto& button : controlButtons) button->visible = true;
+        resetControlsBtn->visible = true;
         resumeBtn->visible    = false;
         newGameBtn->visible   = false;
         quitBtn->visible      = false;
@@ -552,6 +577,7 @@ void Game::render() {
         for (auto& label : controlLabels) label->visible = false;
         for (auto& button : controlButtons) button->visible = false;
         mouseControlCheckbox->visible = false;
+        resetControlsBtn->visible = false;
     }
 
     FormUI::Render(renderer);
