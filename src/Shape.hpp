@@ -25,7 +25,6 @@ public:
     Type getType() const;
 
     void setPosition(int x, int y);
-    void resetRotation();
     std::vector<std::pair<int, int>> getLocalCoords() const;
 
     
@@ -37,4 +36,6 @@ private:
     int rotationState;
     void rotateShape(int direction);
     bool isValidPosition(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight) const;
+    std::vector<std::pair<int, int>> getDefaultCoordsForType(Type type);
+    void resetRotation();
 };

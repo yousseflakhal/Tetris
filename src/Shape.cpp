@@ -3,6 +3,14 @@ using namespace std;
 
 Shape::Shape(Type type, int startX, int startY, SDL_Color color)
     : type(type), color(color), rotationState(0) {
+    
+    coords = getDefaultCoordsForType(type);
+    
+    for (auto& coord : coords) {
+        coord.first += startX;
+        coord.second += startY;
+    }
+    
     static const std::unordered_map<Type, SDL_Color> shapeColors = {
     {Type::O, {255, 215, 0, 255}},
     {Type::I, {0, 255, 255, 255}},
@@ -13,28 +21,26 @@ Shape::Shape(Type type, int startX, int startY, SDL_Color color)
     {Type::T, {128, 0, 128, 255}}
     };
     this->color = shapeColors.at(type);
+}
+
+std::vector<std::pair<int, int>> Shape::getDefaultCoordsForType(Type type) {
     switch (type) {
         case Type::O:
-            coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX + 1, startY + 1}};
-            break;
+            return {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
         case Type::I:
-            coords = {{startX, startY}, {startX - 1, startY}, {startX + 1, startY}, {startX + 2, startY}};
-            break;
+            return {{0, 0}, {-1, 0}, {1, 0}, {2, 0}};
         case Type::S:
-            coords = {{startX, startY}, {startX - 1, startY}, {startX, startY + 1}, {startX + 1, startY + 1}};
-            break;
+            return {{0, 0}, {-1, 0}, {0, 1}, {1, 1}};
         case Type::Z:
-            coords = {{startX, startY}, {startX + 1, startY}, {startX, startY + 1}, {startX - 1, startY + 1}};
-            break;
+            return {{0, 0}, {1, 0}, {0, 1}, {-1, 1}};
         case Type::L:
-        coords = {{startX, startY + 1}, {startX, startY}, {startX, startY + 2}, {startX + 1, startY + 2}};
-            break;
+            return {{0, 1}, {0, 0}, {0, 2}, {1, 2}};
         case Type::J:
-            coords = {{startX, startY}, {startX, startY + 1}, {startX, startY + 2}, {startX - 1, startY + 2}};
-            break;
+            return {{0, 0}, {0, 1}, {0, 2}, {-1, 2}};
         case Type::T:
-            coords = {{startX, startY}, {startX - 1, startY + 1}, {startX, startY + 1}, {startX + 1, startY + 1}};
-            break; 
+            return {{0, 0}, {-1, 1}, {0, 1}, {1, 1}};
+        default:
+            return {};
     }
 }
 
@@ -165,6 +171,20 @@ void Shape::setPosition(int x, int y) {
 }
 
 void Shape::resetRotation() {
+    const int pivotX = coords[0].first;
+    const int pivotY = coords[0].second;
+    
+    auto defaultCoords = getDefaultCoordsForType(type);
+    
+    coords.clear();
+    
+    for (const auto& dc : defaultCoords) {
+        coords.emplace_back(
+            pivotX + dc.first,
+            pivotY + dc.second
+        );
+    }
+    
     rotationState = 0;
 }
 
