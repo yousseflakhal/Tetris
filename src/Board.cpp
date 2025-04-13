@@ -49,7 +49,7 @@ int Board::clearFullLines() {
     }
     return linesToClear.size();
 }
-void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
+void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_Rect rect = {offsetX, offsetY, cols * cellSize, rows * cellSize};
     SDL_RenderFillRect(renderer, &rect);
@@ -66,7 +66,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY) const {
 
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
-            if (grid[y][x] != 0) {
+            if (showPlacedBlocks && grid[y][x] != 0) {
                 SDL_Color color = colorGrid[y][x];
 
                 if (isClearingLines && std::find(linesToClear.begin(), linesToClear.end(), y) != linesToClear.end()) {

@@ -538,8 +538,8 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    board.draw(renderer, 200, 10);
-    if (!isGameOver()) {
+    board.draw(renderer, 200, 10, !resumeCountdownActive);
+    if (!resumeCountdownActive && !isGameOver()) {
         shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
         currentShape.draw(renderer, board.getCellSize(), 200, 10);
     }
@@ -750,10 +750,14 @@ void Game::renderNextPieces() {
     SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
     SDL_RenderFillRect(renderer, &sidebarRect);
 
+    SDL_Color textColor = {255, 255, 255, 255};
+    renderText("NEXT", sidebarX + 20, sidebarY - 30, textColor);
+
+    if (resumeCountdownActive) return;
+
     int previewX = sidebarX - (160 - cellSize);
     int previewY = sidebarY + 20;
     int previewCellSize = cellSize * 0.75;
-
     int spacing = 120;
 
     for (size_t i = 0; i < std::min(nextPieces.size(), size_t(3)); i++) {
@@ -874,10 +878,34 @@ void Game::holdPiece() {
 }
 
 void Game::renderHoldPiece() {
+    
     int holdBoxX = 20;
     int holdBoxY = 70;
     int holdBoxWidth = 120;
     int holdBoxHeight = 120;
+
+    if (!resumeCountdownActive && heldShape.has_value()) {
+        int cellSize = board.getCellSize() * 0.75;
+    
+        auto localCoords = heldShape->getLocalCoords();
+    
+        int minX = 0, maxX = 0;
+        int minY = 0, maxY = 0;
+        for (const auto& coord : localCoords) {
+            minX = std::min(minX, coord.first);
+            maxX = std::max(maxX, coord.first);
+            minY = std::min(minY, coord.second);
+            maxY = std::max(maxY, coord.second);
+        }
+    
+        int shapeWidth = maxX - minX + 1;
+        int shapeHeight = maxY - minY + 1;
+    
+        int drawX = (holdBoxX - 10) + (holdBoxWidth - shapeWidth * cellSize) / 2;
+        int drawY = (holdBoxY - 10) + (holdBoxHeight - shapeHeight * cellSize) / 2;
+    
+        heldShape->draw(renderer, cellSize, drawX, drawY, false);
+    }
 
     SDL_Rect holdBox = {holdBoxX - 10, holdBoxY - 10, holdBoxWidth, holdBoxHeight};
     SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
