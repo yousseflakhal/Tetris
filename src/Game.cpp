@@ -307,6 +307,8 @@ void Game::processInput() {
 
     if (isPaused) {
         if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
+            resumeCountdownActive = true;
+            countdownStartTime = SDL_GetTicks();
             isPaused = false;
             inputHandler.clearKeyState(SDLK_ESCAPE);
         }
