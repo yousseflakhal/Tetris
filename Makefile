@@ -13,7 +13,7 @@ LIB = lib
 
 # SDL specific include and library paths
 CXXFLAGS += -I$(INCLUDE)
-LDFLAGS += -L$(LIB) -lSDL2 -lSDL2_image -lSDL2_ttf
+LDFLAGS += -L$(LIB) -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
 
 # Executable name
 MAIN = main

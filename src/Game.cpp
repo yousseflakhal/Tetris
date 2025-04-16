@@ -38,6 +38,14 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
     }
 
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        throw std::runtime_error("SDL_mixer initialization failed: " + std::string(Mix_GetError()));
+    }
+
+    SoundManager::Load();
+    SoundManager::PlayBackgroundMusic();
+
+
     font = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
     if (!font) {
         throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
@@ -226,6 +234,7 @@ Game::~Game() {
     if (font) {
         TTF_CloseFont(font);
     }
+    SoundManager::CleanUp();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
@@ -342,6 +351,7 @@ void Game::processInput() {
         if (!leftKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                 currentShape.moveLeft();
+                SoundManager::PlayMoveSound();
             }
             leftKeyHandled = true;
             leftLastMoveTime = currentTime;
@@ -350,12 +360,14 @@ void Game::processInput() {
             if (leftFirstRepeat && currentTime - leftLastMoveTime >= autoRepeatInitialDelay) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
+                    SoundManager::PlayMoveSound();
                 }
                 leftLastMoveTime = currentTime;
                 leftFirstRepeat = false;
             } else if (!leftFirstRepeat && currentTime - leftLastMoveTime >= autoRepeatInterval) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
+                    SoundManager::PlayMoveSound();
                 }
                 leftLastMoveTime = currentTime;
             }
@@ -372,6 +384,7 @@ void Game::processInput() {
         if (!rightKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                 currentShape.moveRight(board.getCols());
+                SoundManager::PlayMoveSound();
             }
             rightKeyHandled = true;
             rightLastMoveTime = currentTime;
@@ -380,12 +393,14 @@ void Game::processInput() {
             if (rightFirstRepeat && currentTime - rightLastMoveTime >= autoRepeatInitialDelay) {
                 if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                     currentShape.moveRight(board.getCols());
+                    SoundManager::PlayMoveSound();
                 }
                 rightLastMoveTime = currentTime;
                 rightFirstRepeat = false;
             } else if (!rightFirstRepeat && currentTime - rightLastMoveTime >= autoRepeatInterval) {
                 if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                     currentShape.moveRight(board.getCols());
+                    SoundManager::PlayMoveSound();
                 }
                 rightLastMoveTime = currentTime;
             }
@@ -409,10 +424,12 @@ void Game::processInput() {
         if (targetGridX > currentX) {
             if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                 currentShape.moveRight(board.getCols());
+                SoundManager::PlayMoveSound();
             }
         } else if (targetGridX < currentX) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                 currentShape.moveLeft();
+                SoundManager::PlayMoveSound();
             }
         }
 
@@ -439,6 +456,7 @@ void Game::processInput() {
     if (inputHandler.isKeyPressed(keyBindings[Action::SoftDrop]) && currentTime - lastDownMoveTime >= downMoveDelay) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
+            SoundManager::PlayMoveSound();
             updateScore(0, 1, false);
             lastDownMoveTime = currentTime;
         }
@@ -451,6 +469,7 @@ void Game::processInput() {
             dropDistance++;
         }
         board.placeShape(currentShape);
+        SoundManager::PlayDropSound();
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
         spawnNewShape();
@@ -476,6 +495,7 @@ void Game::processInput() {
             dropDistance++;
         }
         board.placeShape(currentShape);
+        SoundManager::PlayDropSound();
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
         spawnNewShape();
@@ -483,6 +503,7 @@ void Game::processInput() {
 
     if (inputHandler.isKeyJustPressed(keyBindings[Action::Hold])) {
         holdPiece();
+        SoundManager::PlayHoldSound();
     }
 }
 
@@ -511,8 +532,10 @@ void Game::update() {
     if (currentTime - lastMoveTime >= static_cast<Uint32>(speed)) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
+            SoundManager::PlayMoveSound();
         } else {
             board.placeShape(currentShape);
+            SoundManager::PlayDropSound();
             int clearedLines = board.clearFullLines();
             updateScore(clearedLines, 0, false);
 
@@ -803,6 +826,7 @@ void Game::checkLevelUp() {
 void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
     if (clearedLines > 0) {
         totalLinesCleared += clearedLines;
+        SoundManager::PlayClearSound();
     }
 
     int points = 0;

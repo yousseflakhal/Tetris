@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <deque>
 #include <string>
 #include <optional>
@@ -10,6 +11,7 @@
 #include "Shape.hpp"
 #include "InputHandler.hpp"
 #include "SDLFormUI.hpp"
+#include "SoundManager.hpp"
 
 
 class Game {
