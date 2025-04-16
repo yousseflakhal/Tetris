@@ -29,7 +29,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       resumeCountdownActive(false),
       countdownStartTime(0),
       mouseControlEnabled(true),
-      currentScreen(Screen::Main)
+      currentScreen(Screen::Main),
+      isMusicPlaying(false)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -43,8 +44,6 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     }
 
     SoundManager::Load();
-    SoundManager::PlayBackgroundMusic();
-
 
     font = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
     if (!font) {
@@ -510,15 +509,26 @@ void Game::processInput() {
 
 
 void Game::update() {
+    if (resumeCountdownActive || isPaused || isGameOver()) {
+        if (isMusicPlaying) {
+            SoundManager::PauseBackgroundMusic();
+            isMusicPlaying = false;
+        }
 
-    if (resumeCountdownActive) {
-        Uint32 now = SDL_GetTicks();
-        Uint32 elapsed = now - countdownStartTime;
-    
-        if (elapsed >= 3000) {
-            resumeCountdownActive = false;
+        if (resumeCountdownActive) {
+            Uint32 now = SDL_GetTicks();
+            Uint32 elapsed = now - countdownStartTime;
+
+            if (elapsed >= 3000) {
+                resumeCountdownActive = false;
+            }
         }
         return;
+    }
+
+    if (!isMusicPlaying) {
+        SoundManager::ResumeBackgroundMusic();
+        isMusicPlaying = true;
     }
 
     Uint32 currentTime = SDL_GetTicks();
@@ -988,6 +998,8 @@ void Game::resetGame() {
     ignoreNextMouseClick = true;
     resumeCountdownActive = true;
     countdownStartTime = SDL_GetTicks();
+    SoundManager::RestartBackgroundMusic();
+    isMusicPlaying = true;
 }
 
 void Game::updateSpeed() {

@@ -19,6 +19,7 @@ class SoundManager {
         static void PlayBackgroundMusic();
         static void PauseBackgroundMusic();
         static void ResumeBackgroundMusic();
+        static void RestartBackgroundMusic();
         static void StopBackgroundMusic();
         static void PlayClearSound();
     };

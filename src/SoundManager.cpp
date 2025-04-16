@@ -35,6 +35,29 @@ void SoundManager::PlayBackgroundMusic() {
     }
 }
 
+void SoundManager::PauseBackgroundMusic() {
+    if (Mix_PlayingMusic()) {
+        Mix_PauseMusic();
+    }
+}
+
+void SoundManager::ResumeBackgroundMusic() {
+    if (!Mix_PlayingMusic()) {
+        PlayBackgroundMusic();
+    } else {
+        Mix_ResumeMusic();
+    }
+}
+
+void SoundManager::RestartBackgroundMusic() {
+    if (Mix_PlayingMusic()) {
+        Mix_HaltMusic();
+    }
+    if (backgroundMusic) {
+        Mix_PlayMusic(backgroundMusic, -1);
+    }
+}
+
 void SoundManager::PlayHoldSound() {
     if (holdSound) Mix_PlayChannel(-1, holdSound, 0);
 }

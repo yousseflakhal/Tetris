@@ -65,6 +65,7 @@ private:
     bool waitingForKey = false;
     Action actionToRebind;
     Screen currentScreen;
+    bool isMusicPlaying;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;
