@@ -7,6 +7,7 @@ Mix_Chunk* SoundManager::moveSound = nullptr;
 Mix_Chunk* SoundManager::holdSound = nullptr;
 Mix_Chunk* SoundManager::dropSound = nullptr;
 Mix_Music* SoundManager::backgroundMusic = nullptr;
+Mix_Music* SoundManager::gameOverMusic = nullptr;
 Mix_Chunk* SoundManager::clearSound = nullptr;
 
 void SoundManager::Load() {
@@ -15,12 +16,14 @@ void SoundManager::Load() {
     dropSound = Mix_LoadWAV("sounds/drop.ogg");
     backgroundMusic = Mix_LoadMUS("sounds/bg.ogg");
     clearSound = Mix_LoadWAV("sounds/clear.ogg");
+    gameOverMusic = Mix_LoadMUS("sounds/gameover.ogg");
 
     if (!moveSound) SDL_Log("Failed to load move sound: %s", Mix_GetError());
     if (!holdSound) SDL_Log("Failed to load hold sound: %s", Mix_GetError());
     if (!dropSound) SDL_Log("Failed to load drop sound: %s", Mix_GetError());
     if (!backgroundMusic) SDL_Log("Failed to load bg music: %s", Mix_GetError());
     if (!clearSound) SDL_Log("Failed to load clear sound: %s", Mix_GetError());
+    if (!gameOverMusic) SDL_Log("Failed to load game over music: %s", Mix_GetError());
 }
 
 void SoundManager::PlayMoveSound() {
@@ -68,6 +71,17 @@ void SoundManager::PlayDropSound() {
 
 void SoundManager::PlayClearSound() {
     if (clearSound) Mix_PlayChannel(-1, clearSound, 0);
+}
+
+void SoundManager::PlayGameOverMusic() {
+    if (Mix_PlayingMusic()) Mix_HaltMusic();
+    if (gameOverMusic) Mix_PlayMusic(gameOverMusic, 1);
+}
+
+void SoundManager::StopGameOverMusic() {
+    if (Mix_PlayingMusic()) {
+        Mix_HaltMusic();
+    }
 }
 
 void SoundManager::CleanUp() {

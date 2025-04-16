@@ -319,6 +319,11 @@ void Game::processInput() {
             countdownStartTime = SDL_GetTicks();
             isPaused = false;
             inputHandler.clearKeyState(SDLK_ESCAPE);
+    
+            if (!isMusicPlaying) {
+                SoundManager::ResumeBackgroundMusic();
+                isMusicPlaying = true;
+            }
         }
         return;
     }
@@ -509,16 +514,26 @@ void Game::processInput() {
 
 
 void Game::update() {
-    if (resumeCountdownActive || isPaused || isGameOver()) {
-        if (isMusicPlaying) {
-            SoundManager::PauseBackgroundMusic();
-            isMusicPlaying = false;
-        }
+    bool gameOver = isGameOver();
 
+    if (resumeCountdownActive || isPaused || gameOver) {
+        if (gameOver) {
+            if (isMusicPlaying && !gameOverMusicPlayed) {
+                SoundManager::PauseBackgroundMusic();
+                SoundManager::PlayGameOverMusic();
+                isMusicPlaying = false;
+                gameOverMusicPlayed = true;
+            }
+        } else {
+            if (isMusicPlaying) {
+                SoundManager::PauseBackgroundMusic();
+                isMusicPlaying = false;
+            }
+        }
+    
         if (resumeCountdownActive) {
             Uint32 now = SDL_GetTicks();
             Uint32 elapsed = now - countdownStartTime;
-
             if (elapsed >= 3000) {
                 resumeCountdownActive = false;
             }
@@ -998,6 +1013,8 @@ void Game::resetGame() {
     ignoreNextMouseClick = true;
     resumeCountdownActive = true;
     countdownStartTime = SDL_GetTicks();
+    SoundManager::StopGameOverMusic();
+    gameOverMusicPlayed = false;
     SoundManager::RestartBackgroundMusic();
     isMusicPlaying = true;
 }

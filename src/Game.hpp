@@ -66,6 +66,7 @@ private:
     Action actionToRebind;
     Screen currentScreen;
     bool isMusicPlaying;
+    bool gameOverMusicPlayed = false;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;

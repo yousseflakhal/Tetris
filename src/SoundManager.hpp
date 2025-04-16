@@ -9,6 +9,7 @@ class SoundManager {
         static Mix_Chunk* dropSound;
         static Mix_Music* backgroundMusic;
         static Mix_Chunk* clearSound;
+        static Mix_Music* gameOverMusic;
     
         static void Load();
         static void CleanUp();
@@ -21,5 +22,7 @@ class SoundManager {
         static void ResumeBackgroundMusic();
         static void RestartBackgroundMusic();
         static void StopBackgroundMusic();
+        static void PlayGameOverMusic();
+        static void StopGameOverMusic();
         static void PlayClearSound();
     };
