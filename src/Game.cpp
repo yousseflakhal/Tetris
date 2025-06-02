@@ -805,15 +805,40 @@ void Game::renderNextPieces() {
 
     if (resumeCountdownActive) return;
 
-    int previewX = sidebarX - (160 - cellSize);
-    int previewY = sidebarY + 20;
     int previewCellSize = cellSize * 0.75;
-    int spacing = 120;
+    int spacing = 20;
+    int slotHeight = 100;
 
     for (size_t i = 0; i < std::min(nextPieces.size(), size_t(3)); i++) {
-        nextPieces[i].draw(renderer, previewCellSize, previewX, previewY + i * spacing, false);
+        const auto& shape = nextPieces[i];
+        auto localCoords = shape.getLocalCoords();
+        SDL_Color color = shape.getColor();
+
+        int minX = 0, maxX = 0;
+        int minY = 0, maxY = 0;
+        for (const auto& coord : localCoords) {
+            minX = std::min(minX, coord.first);
+            maxX = std::max(maxX, coord.first);
+            minY = std::min(minY, coord.second);
+            maxY = std::max(maxY, coord.second);
+        }
+
+        int shapePixelWidth = (maxX - minX + 1) * previewCellSize;
+        int shapePixelHeight = (maxY - minY + 1) * previewCellSize;
+
+        int drawX = sidebarX + (150 - shapePixelWidth) / 2;
+        int drawY = sidebarY + spacing + i * (slotHeight + spacing) + (slotHeight - shapePixelHeight) / 2;
+
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        for (const auto& coord : localCoords) {
+            int x = drawX + (coord.first - minX) * previewCellSize;
+            int y = drawY + (coord.second - minY) * previewCellSize;
+            SDL_Rect rect = {x + 1, y + 1, previewCellSize - 1, previewCellSize - 1};
+            SDL_RenderFillRect(renderer, &rect);
+        }
     }
 }
+
 
 void Game::spawnNewShape() {
     if (nextPieces.empty()) {
