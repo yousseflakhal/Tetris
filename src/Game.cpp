@@ -954,17 +954,24 @@ void Game::holdPiece() {
 }
 
 void Game::renderHoldPiece() {
-    
+    int previewCellSize = cellSize * 0.75;
+    int holdBoxWidth = previewCellSize * 5;
+    int holdBoxHeight = previewCellSize * 5;
+
     int holdBoxX = 20;
     int holdBoxY = 70;
-    int holdBoxWidth = 120;
-    int holdBoxHeight = 120;
+
+    SDL_Rect holdBox = {holdBoxX, holdBoxY, static_cast<int>(holdBoxWidth), static_cast<int>(holdBoxHeight)};
+    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+    SDL_RenderFillRect(renderer, &holdBox);
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    renderText("HOLD", holdBoxX + 20, holdBoxY - 50, textColor);
 
     if (!resumeCountdownActive && heldShape.has_value()) {
-        int cellSize = board.getCellSize() * 0.75;
-    
         auto localCoords = heldShape->getLocalCoords();
-    
+        SDL_Color color = heldShape->getColor();
+
         int minX = 0, maxX = 0;
         int minY = 0, maxY = 0;
         for (const auto& coord : localCoords) {
@@ -973,45 +980,21 @@ void Game::renderHoldPiece() {
             minY = std::min(minY, coord.second);
             maxY = std::max(maxY, coord.second);
         }
-    
-        int shapeWidth = maxX - minX + 1;
-        int shapeHeight = maxY - minY + 1;
-    
-        int drawX = (holdBoxX - 10) + (holdBoxWidth - shapeWidth * cellSize) / 2;
-        int drawY = (holdBoxY - 10) + (holdBoxHeight - shapeHeight * cellSize) / 2;
-    
-        heldShape->draw(renderer, cellSize, drawX, drawY, false);
+
+        int shapePixelWidth = (maxX - minX + 1) * previewCellSize;
+        int shapePixelHeight = (maxY - minY + 1) * previewCellSize;
+
+        int drawX = holdBoxX + (holdBoxWidth - shapePixelWidth) / 2;
+        int drawY = holdBoxY + (holdBoxHeight - shapePixelHeight) / 2;
+
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        for (const auto& coord : localCoords) {
+            int x = drawX + (coord.first - minX) * previewCellSize;
+            int y = drawY + (coord.second - minY) * previewCellSize;
+            SDL_Rect rect = {x + 1, y + 1, previewCellSize - 1, previewCellSize - 1};
+            SDL_RenderFillRect(renderer, &rect);
+        }
     }
-
-    SDL_Rect holdBox = {holdBoxX - 10, holdBoxY - 10, holdBoxWidth, holdBoxHeight};
-    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-    SDL_RenderFillRect(renderer, &holdBox);
-
-    SDL_Color textColor = {255, 255, 255, 255};
-    renderText("HOLD", holdBoxX + 20, holdBoxY - 50, textColor);
-
-    if (!heldShape.has_value()) return;
-
-    int cellSize = board.getCellSize() * 0.75;
-    
-    auto localCoords = heldShape->getLocalCoords();
-    
-    int minX = 0, maxX = 0;
-    int minY = 0, maxY = 0;
-    for (const auto& coord : localCoords) {
-        minX = std::min(minX, coord.first);
-        maxX = std::max(maxX, coord.first);
-        minY = std::min(minY, coord.second);
-        maxY = std::max(maxY, coord.second);
-    }
-    
-    int shapeWidth = maxX - minX + 1;
-    int shapeHeight = maxY - minY + 1;
-    
-    int drawX = (holdBoxX - 10) + (holdBoxWidth - shapeWidth * cellSize) / 2;
-    int drawY = (holdBoxY - 10) + (holdBoxHeight - shapeHeight * cellSize) / 2;
-
-    heldShape->draw(renderer, cellSize, drawX, drawY, false);
 }
 
 void Game::renderGameOverScreen() {
