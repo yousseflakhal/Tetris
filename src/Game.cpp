@@ -794,14 +794,14 @@ void Game::autoRotateCurrentShape(int targetGridX) {
 
 void Game::renderNextPieces() {
     int sidebarX = board.getCols() * cellSize + 300;
-    int sidebarY = 50;
+    int sidebarY = 70;
 
     SDL_Rect sidebarRect = {sidebarX, sidebarY, 150, 400};
     SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
     SDL_RenderFillRect(renderer, &sidebarRect);
 
     SDL_Color textColor = {255, 255, 255, 255};
-    renderText("NEXT", sidebarX + 20, sidebarY - 30, textColor);
+    renderText("NEXT", sidebarX + 20, sidebarY - 50, textColor);
 
     if (resumeCountdownActive) return;
 
