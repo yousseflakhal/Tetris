@@ -446,6 +446,9 @@ void Game::processInput() {
 
     if (mouseControlEnabled && isMouseInsideBoard && isMouseMoving) {
         int targetGridX = std::round(static_cast<float>(mouseX) / cellSize);
+        if (currentShape.getType() == Shape::Type::O) {
+            targetGridX -= 1;
+        }
         targetGridX = std::clamp(targetGridX, 0, board.getCols() - 1);
 
         int currentX = currentShape.getCoords()[0].first;
@@ -731,7 +734,6 @@ void Game::autoRotateCurrentShape(int targetGridX) {
     for (int rotation = 0; rotation < 4; ++rotation) {
         Shape candidate = original;
 
-
         for (int r = 0; r < rotation; r++) {
             candidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
         }
@@ -742,7 +744,7 @@ void Game::autoRotateCurrentShape(int targetGridX) {
         while (!tempBoard.isOccupied(dropped.getCoords(), 0, 1)) {
             dropped.moveDown();
         }
-
+        
         tempBoard.placeShape(dropped);
         int linesCleared = tempBoard.clearFullLines();
 
@@ -753,26 +755,40 @@ void Game::autoRotateCurrentShape(int targetGridX) {
         int aggregateHeight = 0;
         int holes = 0;
         int bumpiness = 0;
+        int potentialHoles = 0;
         std::vector<int> heights(cols, 0);
+        std::vector<int> maxHeights(cols, 0);
+
+        for (int col = 0; col < cols; col++) {
+            int columnHeight = 0;
+            for (int row = 0; row < rows; row++) {
+                if (grid[row][col] != 0) {
+                    columnHeight = rows - row;
+                    break;
+                }
+            }
+            heights[col] = columnHeight;
+            aggregateHeight += columnHeight;
+            maxHeights[col] = columnHeight;
+        }
 
         for (int col = 0; col < cols; col++) {
             bool foundBlock = false;
-            int topBlockRow = rows;
-            
             for (int row = 0; row < rows; row++) {
                 if (grid[row][col] != 0) {
                     foundBlock = true;
-                    if (row < topBlockRow) {
-                        topBlockRow = row;
-                    }
                 } else if (foundBlock) {
                     holes++;
                 }
-            }
-            
-            if (foundBlock) {
-                heights[col] = rows - topBlockRow;
-                aggregateHeight += heights[col];
+                
+                if (row < rows - 1 && grid[row][col] == 0) {
+                    bool covered = false;
+                    if ((col > 0 && maxHeights[col-1] > rows - row) ||
+                        (col < cols - 1 && maxHeights[col+1] > rows - row)) {
+                        covered = true;
+                    }
+                    if (covered) potentialHoles++;
+                }
             }
         }
 
@@ -782,9 +798,10 @@ void Game::autoRotateCurrentShape(int targetGridX) {
 
         int score = 
             linesCleared * 10000 +
-            aggregateHeight * (-5) +
-            holes * (-50) +
-            bumpiness * (-2);
+            aggregateHeight * (-7) +
+            holes * (-100) +
+            potentialHoles * (-25) +
+            bumpiness * (-3);
 
         if (score > bestScore) {
             bestScore = score;
