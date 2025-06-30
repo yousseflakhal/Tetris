@@ -168,7 +168,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     gameOverNewGameBtn->visible = false;
     gameOverQuitBtn->visible = false;
 
-    FormUI::Layout layout(windowWidth / 2 - 150, 200, 10);
+    FormUI::Layout layout(windowWidth / 2 - 150, 250, 10);
 
     keyBindings = {
         {Action::MoveRight, SDLK_RIGHT},
