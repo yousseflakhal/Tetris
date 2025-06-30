@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_image.h>
 #include <deque>
 #include <string>
 #include <optional>
@@ -71,6 +72,7 @@ private:
     bool gameOverMusicPlayed = false;
     bool soundEnabled;
     bool lastSoundEnabled;
+    SDL_Texture* backgroundTexture = nullptr;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;

@@ -67,6 +67,11 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("Failed to create renderer");
     }
 
+    backgroundTexture = IMG_LoadTexture(renderer, "assets/background.jpg");
+    if (!backgroundTexture) {
+        throw std::runtime_error("Failed to load background image");
+    }
+
     srand(time(nullptr));
 
     FormUI::Init(font);
@@ -243,6 +248,10 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 }
 
 Game::~Game() {
+    if (backgroundTexture) {
+        SDL_DestroyTexture(backgroundTexture);
+        backgroundTexture = nullptr;
+    }
     if (font) {
         TTF_CloseFont(font);
     }
@@ -614,6 +623,10 @@ void Game::update() {
 void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
+
+    if (backgroundTexture) {
+        SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+    }
 
     board.draw(renderer, 200, 10, !resumeCountdownActive);
     if (!resumeCountdownActive && !isGameOver()) {
