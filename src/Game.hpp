@@ -67,6 +67,8 @@ private:
     Screen currentScreen;
     bool isMusicPlaying;
     bool gameOverMusicPlayed = false;
+    bool soundEnabled;
+    bool lastSoundEnabled;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;
@@ -76,6 +78,7 @@ private:
     std::shared_ptr<UIButton> gameOverQuitBtn;
     std::shared_ptr<UIButton> resetControlsBtn;
     std::shared_ptr<UICheckbox> mouseControlCheckbox;
+    std::shared_ptr<UICheckbox> soundCheckbox;
     std::vector<std::shared_ptr<UILabel>> controlLabels;
     std::vector<std::shared_ptr<UIButton>> controlButtons;
     std::vector<std::pair<std::string, Action>> controlMappings;

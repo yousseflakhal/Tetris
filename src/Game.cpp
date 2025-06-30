@@ -43,7 +43,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("SDL_mixer initialization failed: " + std::string(Mix_GetError()));
     }
 
-    SoundManager::Load();
+    if (soundEnabled) SoundManager::Load();
 
     font = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
     if (!font) {
@@ -130,6 +130,19 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         smallFont
     );
     mouseControlCheckbox->visible = false;
+
+    soundEnabled = false;
+    lastSoundEnabled = soundEnabled;
+    soundCheckbox = FormUI::Checkbox(
+        "Enable Sound",
+        windowWidth / 2 - 150,
+        200,
+        300,
+        30,
+        &soundEnabled,
+        smallFont
+    );
+    soundCheckbox->visible = false;
 
     gameOverNewGameBtn = FormUI::Button(
         "New Game",
@@ -233,7 +246,7 @@ Game::~Game() {
     if (font) {
         TTF_CloseFont(font);
     }
-    SoundManager::CleanUp();
+    if (soundEnabled) SoundManager::CleanUp();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
@@ -249,6 +262,17 @@ void Game::run() {
 }
 
 void Game::processInput() {
+    if (soundEnabled != lastSoundEnabled) {
+        if (soundEnabled) {
+            SoundManager::Load();
+            SoundManager::RestartBackgroundMusic();
+            isMusicPlaying = true;
+        } else {
+            SoundManager::PauseBackgroundMusic();
+            isMusicPlaying = false;
+        }
+        lastSoundEnabled = soundEnabled;
+    }
     inputHandler.beginFrame();
 
     SDL_Event e;
@@ -321,7 +345,7 @@ void Game::processInput() {
             inputHandler.clearKeyState(SDLK_ESCAPE);
     
             if (!isMusicPlaying) {
-                SoundManager::ResumeBackgroundMusic();
+                if (soundEnabled) SoundManager::ResumeBackgroundMusic();
                 isMusicPlaying = true;
             }
         }
@@ -355,7 +379,7 @@ void Game::processInput() {
         if (!leftKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                 currentShape.moveLeft();
-                SoundManager::PlayMoveSound();
+                if (soundEnabled) SoundManager::PlayMoveSound();
             }
             leftKeyHandled = true;
             leftLastMoveTime = currentTime;
@@ -364,14 +388,14 @@ void Game::processInput() {
             if (leftFirstRepeat && currentTime - leftLastMoveTime >= autoRepeatInitialDelay) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
-                    SoundManager::PlayMoveSound();
+                    if (soundEnabled) SoundManager::PlayMoveSound();
                 }
                 leftLastMoveTime = currentTime;
                 leftFirstRepeat = false;
             } else if (!leftFirstRepeat && currentTime - leftLastMoveTime >= autoRepeatInterval) {
                 if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                     currentShape.moveLeft();
-                    SoundManager::PlayMoveSound();
+                    if (soundEnabled) SoundManager::PlayMoveSound();
                 }
                 leftLastMoveTime = currentTime;
             }
@@ -388,7 +412,7 @@ void Game::processInput() {
         if (!rightKeyHandled) {
             if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                 currentShape.moveRight(board.getCols());
-                SoundManager::PlayMoveSound();
+                if (soundEnabled) SoundManager::PlayMoveSound();
             }
             rightKeyHandled = true;
             rightLastMoveTime = currentTime;
@@ -397,14 +421,14 @@ void Game::processInput() {
             if (rightFirstRepeat && currentTime - rightLastMoveTime >= autoRepeatInitialDelay) {
                 if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                     currentShape.moveRight(board.getCols());
-                    SoundManager::PlayMoveSound();
+                    if (soundEnabled) SoundManager::PlayMoveSound();
                 }
                 rightLastMoveTime = currentTime;
                 rightFirstRepeat = false;
             } else if (!rightFirstRepeat && currentTime - rightLastMoveTime >= autoRepeatInterval) {
                 if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                     currentShape.moveRight(board.getCols());
-                    SoundManager::PlayMoveSound();
+                    if (soundEnabled) SoundManager::PlayMoveSound();
                 }
                 rightLastMoveTime = currentTime;
             }
@@ -428,12 +452,12 @@ void Game::processInput() {
         if (targetGridX > currentX) {
             if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
                 currentShape.moveRight(board.getCols());
-                SoundManager::PlayMoveSound();
+                if (soundEnabled) SoundManager::PlayMoveSound();
             }
         } else if (targetGridX < currentX) {
             if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
                 currentShape.moveLeft();
-                SoundManager::PlayMoveSound();
+                if (soundEnabled) SoundManager::PlayMoveSound();
             }
         }
 
@@ -460,7 +484,7 @@ void Game::processInput() {
     if (inputHandler.isKeyPressed(keyBindings[Action::SoftDrop]) && currentTime - lastDownMoveTime >= downMoveDelay) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
-            SoundManager::PlayMoveSound();
+            if (soundEnabled) SoundManager::PlayMoveSound();
             updateScore(0, 1, false);
             lastDownMoveTime = currentTime;
         }
@@ -473,7 +497,7 @@ void Game::processInput() {
             dropDistance++;
         }
         board.placeShape(currentShape);
-        SoundManager::PlayDropSound();
+        if (soundEnabled) SoundManager::PlayDropSound();
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
         spawnNewShape();
@@ -499,7 +523,7 @@ void Game::processInput() {
             dropDistance++;
         }
         board.placeShape(currentShape);
-        SoundManager::PlayDropSound();
+        if (soundEnabled) SoundManager::PlayDropSound();
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
         spawnNewShape();
@@ -507,7 +531,7 @@ void Game::processInput() {
 
     if (inputHandler.isKeyJustPressed(keyBindings[Action::Hold])) {
         holdPiece();
-        SoundManager::PlayHoldSound();
+        if (soundEnabled) SoundManager::PlayHoldSound();
     }
 }
 
@@ -519,14 +543,14 @@ void Game::update() {
     if (resumeCountdownActive || isPaused || gameOver) {
         if (gameOver) {
             if (isMusicPlaying && !gameOverMusicPlayed) {
-                SoundManager::PauseBackgroundMusic();
-                SoundManager::PlayGameOverMusic();
+                if (soundEnabled) SoundManager::PauseBackgroundMusic();
+                if (soundEnabled) SoundManager::PlayGameOverMusic();
                 isMusicPlaying = false;
                 gameOverMusicPlayed = true;
             }
         } else {
             if (isMusicPlaying) {
-                SoundManager::PauseBackgroundMusic();
+                if (soundEnabled) SoundManager::PauseBackgroundMusic();
                 isMusicPlaying = false;
             }
         }
@@ -542,7 +566,7 @@ void Game::update() {
     }
 
     if (!isMusicPlaying) {
-        SoundManager::ResumeBackgroundMusic();
+        if (soundEnabled) SoundManager::ResumeBackgroundMusic();
         isMusicPlaying = true;
     }
 
@@ -557,10 +581,10 @@ void Game::update() {
     if (currentTime - lastMoveTime >= static_cast<Uint32>(speed)) {
         if (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
-            SoundManager::PlayMoveSound();
+            if (soundEnabled) SoundManager::PlayMoveSound();
         } else {
             board.placeShape(currentShape);
-            SoundManager::PlayDropSound();
+            if (soundEnabled) SoundManager::PlayDropSound();
             int clearedLines = board.clearFullLines();
             updateScore(clearedLines, 0, false);
 
@@ -621,6 +645,7 @@ void Game::render() {
 
     if (currentScreen == Screen::Settings) {
         mouseControlCheckbox->visible = true;
+        soundCheckbox->visible = true;
         for (auto& label : controlLabels) label->visible = true;
         for (auto& button : controlButtons) button->visible = true;
         resetControlsBtn->visible = true;
@@ -637,6 +662,7 @@ void Game::render() {
         for (auto& label : controlLabels) label->visible = false;
         for (auto& button : controlButtons) button->visible = false;
         mouseControlCheckbox->visible = false;
+        soundCheckbox->visible = false;
     } 
     else {
         resumeBtn->visible    = false;
@@ -646,6 +672,7 @@ void Game::render() {
         for (auto& label : controlLabels) label->visible = false;
         for (auto& button : controlButtons) button->visible = false;
         mouseControlCheckbox->visible = false;
+        soundCheckbox->visible = false;
         resetControlsBtn->visible = false;
     }
 
@@ -792,6 +819,7 @@ void Game::autoRotateCurrentShape(int targetGridX) {
     currentShape = bestOrientation;
 }
 
+
 void Game::renderNextPieces() {
     int sidebarX = board.getCols() * cellSize + 300;
     int sidebarY = 70;
@@ -876,7 +904,7 @@ void Game::checkLevelUp() {
 void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
     if (clearedLines > 0) {
         totalLinesCleared += clearedLines;
-        SoundManager::PlayClearSound();
+        if (soundEnabled) SoundManager::PlayClearSound();
     }
 
     int points = 0;
@@ -1021,9 +1049,9 @@ void Game::resetGame() {
     ignoreNextMouseClick = true;
     resumeCountdownActive = true;
     countdownStartTime = SDL_GetTicks();
-    SoundManager::StopGameOverMusic();
+    if (soundEnabled) SoundManager::StopGameOverMusic();
     gameOverMusicPlayed = false;
-    SoundManager::RestartBackgroundMusic();
+    if (soundEnabled) SoundManager::RestartBackgroundMusic();
     isMusicPlaying = true;
 }
 
