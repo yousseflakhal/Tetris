@@ -722,93 +722,69 @@ int Game::evaluateLanding(const Shape &candidate) {
 }
 
 void Game::autoRotateCurrentShape(int targetGridX) {
-    if (currentShape.getType() == Shape::Type::I) {
-        auto isHorizontal = [&](const Shape &s) -> bool {
-            const auto &coords = s.getCoords();
-            int y0 = coords[0].second;
-            for (const auto &p : coords) {
-                if (p.second != y0)
-                    return false;
-            }
-            return true;
-        };
+    (void)targetGridX;
 
-        auto [surfaceCoords, isFlat] = board.getSurfaceCoordsAndFlatStatus(targetGridX);
-
-        if (isFlat) {
-            Shape horizontalCandidate = currentShape;
-            for (int i = 0; i < 4; ++i) {
-                if (isHorizontal(horizontalCandidate))
-                    break;
-                horizontalCandidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
-            }
-
-            Shape dropHorizontal = horizontalCandidate;
-            while (!board.isOccupied(dropHorizontal.getCoords(), 0, 1)) {
-                dropHorizontal.moveDown();
-            }
-            for (auto &p : dropHorizontal.coords) {
-                p.second -= 1;
-            }
-
-            bool horizontalFits = true;
-            for (const auto &p : dropHorizontal.getCoords()) {
-                if (p.second != board.getRows() - 1) {
-                    horizontalFits = false;
-                    break;
-                }
-            }
-
-            if (horizontalFits) {
-                currentShape = horizontalCandidate;
-                return;
-            }
-        } 
-
-        auto isVertical = [&](const Shape &s) -> bool {
-            const auto &coords = s.getCoords();
-            int x0 = coords[0].first;
-            for (const auto &p : coords) {
-                if (p.first != x0)
-                    return false;
-            }
-            return true;
-        };
-
-        for (int i = 0; i < 4; ++i) {
-            if (isVertical(currentShape))
-                break;
-            currentShape.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
-        }
-    }
-
-    int bestScore = -100000;
+    int bestScore = std::numeric_limits<int>::min();
     Shape bestOrientation = currentShape;
     Shape original = currentShape;
 
     for (int rotation = 0; rotation < 4; ++rotation) {
         Shape candidate = original;
 
+
         for (int r = 0; r < rotation; r++) {
             candidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
         }
 
-        Shape dropped = candidate;
         Board tempBoard = board;
-
+        Shape dropped = candidate;
+        
         while (!tempBoard.isOccupied(dropped.getCoords(), 0, 1)) {
             dropped.moveDown();
         }
+
         tempBoard.placeShape(dropped);
+        int linesCleared = tempBoard.clearFullLines();
 
-        int linesCleared = tempBoard.countFullLines();
-        int sumY = 0;
-        for (auto &p : dropped.getCoords()) {
-            sumY += p.second;
+        const int cols = tempBoard.getCols();
+        const int rows = tempBoard.getRows();
+        const auto& grid = tempBoard.getGrid();
+        
+        int aggregateHeight = 0;
+        int holes = 0;
+        int bumpiness = 0;
+        std::vector<int> heights(cols, 0);
+
+        for (int col = 0; col < cols; col++) {
+            bool foundBlock = false;
+            int topBlockRow = rows;
+            
+            for (int row = 0; row < rows; row++) {
+                if (grid[row][col] != 0) {
+                    foundBlock = true;
+                    if (row < topBlockRow) {
+                        topBlockRow = row;
+                    }
+                } else if (foundBlock) {
+                    holes++;
+                }
+            }
+            
+            if (foundBlock) {
+                heights[col] = rows - topBlockRow;
+                aggregateHeight += heights[col];
+            }
         }
-        int holes = tempBoard.countHoles();
 
-        int score = linesCleared * 100 + sumY - holes * 10;
+        for (int i = 0; i < cols - 1; i++) {
+            bumpiness += std::abs(heights[i] - heights[i + 1]);
+        }
+
+        int score = 
+            linesCleared * 10000 +
+            aggregateHeight * (-5) +
+            holes * (-50) +
+            bumpiness * (-2);
 
         if (score > bestScore) {
             bestScore = score;

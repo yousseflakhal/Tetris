@@ -7,6 +7,8 @@
 #include <optional>
 #include <memory>
 #include <cmath>
+#include <limits>
+#include <vector>
 #include "Board.hpp"
 #include "Shape.hpp"
 #include "InputHandler.hpp"
