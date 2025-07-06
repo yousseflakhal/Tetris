@@ -30,7 +30,9 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       countdownStartTime(0),
       mouseControlEnabled(true),
       currentScreen(Screen::Main),
-      isMusicPlaying(false)
+      isMusicPlaying(false),
+      gameStartTime(0),
+      startGameTimerAfterCountdown(true)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -571,13 +573,19 @@ void Game::update() {
                 isMusicPlaying = false;
             }
         }
-    
+
         if (resumeCountdownActive) {
             Uint32 now = SDL_GetTicks();
             Uint32 elapsed = now - countdownStartTime;
             if (elapsed >= 3000) {
                 resumeCountdownActive = false;
-                totalPausedTime += elapsed;
+                if (!startGameTimerAfterCountdown) {
+                    totalPausedTime += elapsed;
+                }
+                if (startGameTimerAfterCountdown) {
+                    gameStartTime = now;
+                    startGameTimerAfterCountdown = false;
+                }
             }
             return;
         }
@@ -625,7 +633,6 @@ void Game::update() {
         shadowShape.moveDown();
     }
 }
-
 
 void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -715,16 +722,18 @@ void Game::render() {
         }
     }
 
-    Uint32 ms = getElapsedGameTime();
-    int seconds = (ms / 1000) % 60;
-    int minutes = (ms / 1000) / 60;
-    char buffer[32];
-    sprintf(buffer, "Time: %02d:%02d", minutes, seconds);
+    if (!isPaused && !resumeCountdownActive && !isGameOver() && currentScreen == Screen::Main || resumeCountdownActive) {
+        Uint32 ms = getElapsedGameTime();
+        int seconds = (ms / 1000) % 60;
+        int minutes = (ms / 1000) / 60;
+        char buffer[32];
+        sprintf(buffer, "Time: %02d:%02d", minutes, seconds);
 
-    int textX = windowWidth - 180;
-    int textY = windowHeight - 40;
-    SDL_Color textColor = {255, 255, 255, 255};
-    renderText(buffer, textX, textY, textColor);
+        int textX = windowWidth - 220;
+        int textY = windowHeight - 40;
+        SDL_Color textColor = {255, 255, 255, 255};
+        renderText(buffer, textX, textY, textColor);
+    }
 
     SDL_RenderPresent(renderer);
 }
@@ -1073,15 +1082,15 @@ void Game::resetGame() {
     ignoreNextMouseClick = true;
     resumeCountdownActive = true;
     countdownStartTime = SDL_GetTicks();
+    totalPausedTime = 0;
+    pauseStartTime = 0;
+    startGameTimerAfterCountdown = true;
+    gameStartTime = 0;
     if (soundEnabled) SoundManager::StopGameOverMusic();
     gameOverMusicPlayed = false;
     if (soundEnabled) SoundManager::RestartBackgroundMusic();
     isMusicPlaying = true;
-    gameStartTime = SDL_GetTicks();
-    totalPausedTime = 0;
-    pauseStartTime = 0;
 }
-
 void Game::updateSpeed() {
     if (level == 0) speed = 800;
     else if (level == 1) speed = 717;
@@ -1118,13 +1127,17 @@ void Game::renderSettingsScreen() {
 }
 
 Uint32 Game::getElapsedGameTime() const {
+    if (gameStartTime == 0) {
+        return 0;
+    }
     Uint32 now = SDL_GetTicks();
-    Uint32 timing = now - gameStartTime - totalPausedTime;
+    Uint32 pausedFor = totalPausedTime;
     if (isPaused) {
-        timing = pauseStartTime - gameStartTime - totalPausedTime;
+        pausedFor += now - pauseStartTime;
     }
     if (resumeCountdownActive) {
-        timing = countdownStartTime - gameStartTime - totalPausedTime;
+        pausedFor += now - countdownStartTime;
     }
-    return timing;
+    
+    return now - gameStartTime - pausedFor;
 }

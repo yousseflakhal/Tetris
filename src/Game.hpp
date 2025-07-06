@@ -77,6 +77,7 @@ private:
     Uint32 pauseStartTime = 0;
     Uint32 countdownStartTime = 0;
     bool isTimingPaused = false;
+    bool startGameTimerAfterCountdown = false;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;
