@@ -63,7 +63,6 @@ private:
     bool ignoreNextMouseClick;
     bool isPaused;
     bool resumeCountdownActive;
-    Uint32 countdownStartTime;
     bool mouseControlEnabled;
     bool waitingForKey = false;
     Action actionToRebind;
@@ -73,6 +72,11 @@ private:
     bool soundEnabled;
     bool lastSoundEnabled;
     SDL_Texture* backgroundTexture = nullptr;
+    Uint32 gameStartTime = 0;
+    Uint32 totalPausedTime = 0;
+    Uint32 pauseStartTime = 0;
+    Uint32 countdownStartTime = 0;
+    bool isTimingPaused = false;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;
@@ -108,4 +112,5 @@ private:
     void updateSpeed();
     void renderPauseMenu();
     void renderSettingsScreen();
+    Uint32 getElapsedGameTime() const;
 };

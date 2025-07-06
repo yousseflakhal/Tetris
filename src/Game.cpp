@@ -352,6 +352,10 @@ void Game::processInput() {
             countdownStartTime = SDL_GetTicks();
             isPaused = false;
             inputHandler.clearKeyState(SDLK_ESCAPE);
+
+            totalPausedTime += SDL_GetTicks() - pauseStartTime;
+            resumeCountdownActive = true;
+            countdownStartTime = SDL_GetTicks();
     
             if (!isMusicPlaying) {
                 if (soundEnabled) SoundManager::ResumeBackgroundMusic();
@@ -363,6 +367,7 @@ void Game::processInput() {
 
     if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
         isPaused = true;
+        pauseStartTime = SDL_GetTicks();
         inputHandler.clearKeyState(SDLK_ESCAPE);
         return;
     }
@@ -572,7 +577,9 @@ void Game::update() {
             Uint32 elapsed = now - countdownStartTime;
             if (elapsed >= 3000) {
                 resumeCountdownActive = false;
+                totalPausedTime += elapsed;
             }
+            return;
         }
         return;
     }
@@ -707,6 +714,17 @@ void Game::render() {
                        white);
         }
     }
+
+    Uint32 ms = getElapsedGameTime();
+    int seconds = (ms / 1000) % 60;
+    int minutes = (ms / 1000) / 60;
+    char buffer[32];
+    sprintf(buffer, "Time: %02d:%02d", minutes, seconds);
+
+    int textX = windowWidth - 180;
+    int textY = windowHeight - 40;
+    SDL_Color textColor = {255, 255, 255, 255};
+    renderText(buffer, textX, textY, textColor);
 
     SDL_RenderPresent(renderer);
 }
@@ -1059,6 +1077,9 @@ void Game::resetGame() {
     gameOverMusicPlayed = false;
     if (soundEnabled) SoundManager::RestartBackgroundMusic();
     isMusicPlaying = true;
+    gameStartTime = SDL_GetTicks();
+    totalPausedTime = 0;
+    pauseStartTime = 0;
 }
 
 void Game::updateSpeed() {
@@ -1094,4 +1115,16 @@ void Game::renderSettingsScreen() {
 
     SDL_Color white = {255, 255, 255, 255};
     renderText("SETTINGS", windowWidth / 2 - 60, 50, white);
+}
+
+Uint32 Game::getElapsedGameTime() const {
+    Uint32 now = SDL_GetTicks();
+    Uint32 timing = now - gameStartTime - totalPausedTime;
+    if (isPaused) {
+        timing = pauseStartTime - gameStartTime - totalPausedTime;
+    }
+    if (resumeCountdownActive) {
+        timing = countdownStartTime - gameStartTime - totalPausedTime;
+    }
+    return timing;
 }
