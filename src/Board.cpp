@@ -55,7 +55,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
     const int boardHeight = rows * cellSize;
     const int gridGap = 1;
     
-    drawRoundedRect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, 255);
+    drawRoundedRect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, 255, true);
     
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
@@ -71,29 +71,41 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                     float elapsed = static_cast<float>(currentTime - clearStartTime);
                     float progress = std::min(elapsed / 500.0f, 1.0f);
                     
-                    float scale = 1.0f - progress * 0.5f;
-                    int scaledSize = static_cast<int>(cellDrawSize * scale);
-                    int offset = (cellDrawSize - scaledSize) / 2;
+                    Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress));
+                    float rotation = 360.0f * progress;
                     
-                    SDL_Color white = {255, 255, 255, static_cast<Uint8>(255 * (1.0f - progress))};
-                    drawRoundedRect(renderer, 
-                                   cellX + offset, 
-                                   cellY + offset, 
-                                   scaledSize, 
-                                   scaledSize, 
-                                   static_cast<int>(2 * scale), 
-                                   white, 
-                                   white.a);
+                    SDL_Texture* tempTexture = SDL_CreateTexture(
+                        renderer, 
+                        SDL_PIXELFORMAT_RGBA8888, 
+                        SDL_TEXTUREACCESS_TARGET, 
+                        cellDrawSize, 
+                        cellDrawSize
+                    );
+                    SDL_SetTextureBlendMode(tempTexture, SDL_BLENDMODE_BLEND);
+                    
+                    SDL_SetRenderTarget(renderer, tempTexture);
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+                    SDL_RenderClear(renderer);
+                    drawRoundedRect(renderer, 0, 0, cellDrawSize, cellDrawSize, 2, 
+                                   {255, 255, 255, alpha}, alpha, true);
+                    SDL_SetRenderTarget(renderer, nullptr);
+                    
+                    SDL_Rect destRect = {cellX, cellY, cellDrawSize, cellDrawSize};
+                    SDL_RenderCopyEx(renderer, tempTexture, nullptr, &destRect, 
+                                    rotation, nullptr, SDL_FLIP_NONE);
+                    
+                    SDL_DestroyTexture(tempTexture);
                 } else {
-                    drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, color, 255);
+                    drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 
+                                   2, color, 255, true);
                 }
             } else {
-                drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, {0, 0, 0, 255}, 255);
+                drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 
+                               2, {0, 0, 0, 255}, 255, true);
             }
         }
     }
 }
-
 
 int Board::getRows() const {
     return rows;
