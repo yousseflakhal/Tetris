@@ -2,6 +2,7 @@
 #include <vector>
 #include <SDL2/SDL.h>
 #include "Shape.hpp"
+#include "DrawUtils.hpp"
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>

@@ -69,7 +69,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("Failed to create renderer");
     }
 
-    backgroundTexture = IMG_LoadTexture(renderer, "assets/background.jpg");
+    backgroundTexture = IMG_LoadTexture(renderer, "assets/background.png");
     if (!backgroundTexture) {
         throw std::runtime_error("Failed to load background image");
     }

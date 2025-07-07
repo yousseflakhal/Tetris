@@ -49,51 +49,46 @@ int Board::clearFullLines() {
     }
     return linesToClear.size();
 }
+
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_Rect rect = {offsetX, offsetY, cols * cellSize, rows * cellSize};
-    SDL_RenderFillRect(renderer, &rect);
-
-    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
-    for (int x = 0; x <= cols; ++x) {
-        SDL_RenderDrawLine(renderer, offsetX + x * cellSize, offsetY,
-                           offsetX + x * cellSize, offsetY + rows * cellSize);
-    }
-    for (int y = 0; y <= rows; ++y) {
-        SDL_RenderDrawLine(renderer, offsetX, offsetY + y * cellSize,
-                           offsetX + cols * cellSize, offsetY + y * cellSize);
-    }
-
+    const int boardWidth = cols * cellSize;
+    const int boardHeight = rows * cellSize;
+    const int gridGap = 1;
+    
+    drawRoundedRect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, 255);
+    
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
+            const int cellX = offsetX + x * cellSize + gridGap;
+            const int cellY = offsetY + y * cellSize + gridGap;
+            const int cellDrawSize = cellSize - 2 * gridGap;
+            
             if (showPlacedBlocks && grid[y][x] != 0) {
                 SDL_Color color = colorGrid[y][x];
-
+                
                 if (isClearingLines && std::find(linesToClear.begin(), linesToClear.end(), y) != linesToClear.end()) {
                     Uint32 currentTime = SDL_GetTicks();
                     float elapsed = static_cast<float>(currentTime - clearStartTime);
-                    float progress = elapsed / 500.0f;
-                    if (progress > 1.0f) progress = 1.0f;
-
-                    Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress));
-                    float rotation = 360.0f * progress;
-
-                    SDL_Texture* tempTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, cellSize, cellSize);
-                    SDL_SetTextureBlendMode(tempTexture, SDL_BLENDMODE_BLEND);
-                    SDL_SetRenderTarget(renderer, tempTexture);
-                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
-                    SDL_RenderClear(renderer);
-                    SDL_SetRenderTarget(renderer, nullptr);
-
-                    SDL_Rect cellRect = {offsetX + x * cellSize, offsetY + y * cellSize, cellSize - 1, cellSize - 1};
-                    SDL_RenderCopyEx(renderer, tempTexture, nullptr, &cellRect, rotation, nullptr, SDL_FLIP_NONE);
-
-                    SDL_DestroyTexture(tempTexture);
+                    float progress = std::min(elapsed / 500.0f, 1.0f);
+                    
+                    float scale = 1.0f - progress * 0.5f;
+                    int scaledSize = static_cast<int>(cellDrawSize * scale);
+                    int offset = (cellDrawSize - scaledSize) / 2;
+                    
+                    SDL_Color white = {255, 255, 255, static_cast<Uint8>(255 * (1.0f - progress))};
+                    drawRoundedRect(renderer, 
+                                   cellX + offset, 
+                                   cellY + offset, 
+                                   scaledSize, 
+                                   scaledSize, 
+                                   static_cast<int>(2 * scale), 
+                                   white, 
+                                   white.a);
                 } else {
-                    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
-                    SDL_Rect cellRect = {offsetX + x * cellSize, offsetY + y * cellSize, cellSize - 1, cellSize - 1};
-                    SDL_RenderFillRect(renderer, &cellRect);
+                    drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, color, 255);
                 }
+            } else {
+                drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, {0, 0, 0, 255}, 255);
             }
         }
     }
