@@ -891,11 +891,20 @@ void Game::renderNextPieces() {
         int drawY = sidebarY + spacing + i * (slotHeight + spacing) + (slotHeight - shapePixelHeight) / 2;
 
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        const int gap = 1;
+        const int previewCellDrawSize = previewCellSize - 2 * gap;
+        const int radius = 1;
+
         for (const auto& coord : localCoords) {
-            int x = drawX + (coord.first - minX) * previewCellSize;
-            int y = drawY + (coord.second - minY) * previewCellSize;
-            SDL_Rect rect = {x + 1, y + 1, previewCellSize - 1, previewCellSize - 1};
-            SDL_RenderFillRect(renderer, &rect);
+            int x = drawX + (coord.first - minX) * previewCellSize + gap;
+            int y = drawY + (coord.second - minY) * previewCellSize + gap;
+            
+            drawRoundedRect(renderer, 
+                           x, y,
+                           previewCellDrawSize, previewCellDrawSize,
+                           radius,
+                           color,
+                           color.a);
         }
     }
 }
@@ -1049,11 +1058,20 @@ void Game::renderHoldPiece() {
         int drawY = holdBoxY + (holdBoxHeight - shapePixelHeight) / 2;
 
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        const int gap = 1;
+        const int previewCellDrawSize = previewCellSize - 2 * gap;
+        const int radius = 1;
+
         for (const auto& coord : localCoords) {
-            int x = drawX + (coord.first - minX) * previewCellSize;
-            int y = drawY + (coord.second - minY) * previewCellSize;
-            SDL_Rect rect = {x + 1, y + 1, previewCellSize - 1, previewCellSize - 1};
-            SDL_RenderFillRect(renderer, &rect);
+            int x = drawX + (coord.first - minX) * previewCellSize + gap;
+            int y = drawY + (coord.second - minY) * previewCellSize + gap;
+            
+            drawRoundedRect(renderer, 
+                           x, y,
+                           previewCellDrawSize, previewCellDrawSize,
+                           radius,
+                           color,
+                           color.a);
         }
     }
 }

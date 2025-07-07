@@ -130,24 +130,39 @@ bool Shape::isValidPosition(const std::vector<std::vector<int>>& board, int boar
 }
 
 
-
 void Shape::draw(SDL_Renderer* renderer, int cellSize, int offsetX, int offsetY, bool isShadow) const {
+    const int gap = 1;
+    const int cellDrawSize = cellSize - 2 * gap;
+    const int radius = 2;
+    
     SDL_Color drawColor = color;
 
     if (isShadow) {
         drawColor.a = 100;
-        SDL_SetRenderDrawColor(renderer, drawColor.r, drawColor.g, drawColor.b, drawColor.a);
         
         for (const auto& coord : coords) {
-            SDL_Rect rect = {offsetX + coord.first * cellSize + 1, offsetY + coord.second * cellSize + 1, cellSize - 1, cellSize - 1};
-            SDL_RenderDrawRect(renderer, &rect);
+            int x = offsetX + coord.first * cellSize + gap;
+            int y = offsetY + coord.second * cellSize + gap;
+            
+            drawRoundedRect(renderer, 
+                            x, y, 
+                            cellDrawSize, cellDrawSize, 
+                            radius, 
+                            drawColor, 
+                            drawColor.a,
+                            false);
         }
     } else {
-        SDL_SetRenderDrawColor(renderer, drawColor.r, drawColor.g, drawColor.b, drawColor.a);
-        
         for (const auto& coord : coords) {
-            SDL_Rect rect = {offsetX + coord.first * cellSize + 1, offsetY + coord.second * cellSize + 1, cellSize - 1, cellSize - 1};
-            SDL_RenderFillRect(renderer, &rect);
+            int x = offsetX + coord.first * cellSize + gap;
+            int y = offsetY + coord.second * cellSize + gap;
+            drawRoundedRect(renderer, 
+                            x, y, 
+                            cellDrawSize, cellDrawSize, 
+                            radius, 
+                            drawColor, 
+                            drawColor.a,
+                            true);
         }
     }
 }

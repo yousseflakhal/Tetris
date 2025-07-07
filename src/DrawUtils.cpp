@@ -15,7 +15,8 @@ void drawAACircle(SDL_Renderer* renderer, int cx, int cy, int radius) {
     }
 }
 
-void drawRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color, Uint8 alpha) {
+void drawRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h, 
+                     int radius, SDL_Color color, Uint8 alpha, bool filled) {
     if (w <= 0 || h <= 0) return;
 
     Uint8 orig_r, orig_g, orig_b, orig_a;
@@ -25,31 +26,42 @@ void drawRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h, int rad
 
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, alpha);
 
-    if (w > 2 * radius && h > 2 * radius) {
-        SDL_Rect center_rect = {x + radius, y + radius, w - 2 * radius, h - 2 * radius};
-        SDL_RenderFillRect(renderer, &center_rect);
+    if (filled) {
+        if (w > 2 * radius && h > 2 * radius) {
+            SDL_Rect center_rect = {x + radius, y + radius, w - 2 * radius, h - 2 * radius};
+            SDL_RenderFillRect(renderer, &center_rect);
+        }
+
+        if (w > 2 * radius) {
+            SDL_Rect top_rect = {x + radius, y, w - 2 * radius, radius};
+            SDL_Rect bottom_rect = {x + radius, y + h - radius, w - 2 * radius, radius};
+            SDL_RenderFillRect(renderer, &top_rect);
+            SDL_RenderFillRect(renderer, &bottom_rect);
+        }
+
+        if (h > 2 * radius) {
+            SDL_Rect left_rect = {x, y + radius, radius, h - 2 * radius};
+            SDL_Rect right_rect = {x + w - radius, y + radius, radius, h - 2 * radius};
+            SDL_RenderFillRect(renderer, &left_rect);
+            SDL_RenderFillRect(renderer, &right_rect);
+        }
     }
 
-    if (w > 2 * radius) {
-        SDL_Rect top_rect = {x + radius, y, w - 2 * radius, radius};
-        SDL_Rect bottom_rect = {x + radius, y + h - radius, w - 2 * radius, radius};
-        SDL_RenderFillRect(renderer, &top_rect);
-        SDL_RenderFillRect(renderer, &bottom_rect);
-    }
-
-    if (h > 2 * radius) {
-        SDL_Rect left_rect = {x, y + radius, radius, h - 2 * radius};
-        SDL_Rect right_rect = {x + w - radius, y + radius, radius, h - 2 * radius};
-        SDL_RenderFillRect(renderer, &left_rect);
-        SDL_RenderFillRect(renderer, &right_rect);
-    }
-
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, alpha);
     if (radius > 0) {
         drawAACircle(renderer, x + radius, y + radius, radius);
         drawAACircle(renderer, x + w - radius - 1, y + radius, radius);
         drawAACircle(renderer, x + radius, y + h - radius - 1, radius);
         drawAACircle(renderer, x + w - radius - 1, y + h - radius - 1, radius);
+    }
+
+    if (w > 2 * radius) {
+        SDL_RenderDrawLine(renderer, x + radius, y, x + w - radius, y);
+        SDL_RenderDrawLine(renderer, x + radius, y + h - 1, x + w - radius, y + h - 1);
+    }
+
+    if (h > 2 * radius) {
+        SDL_RenderDrawLine(renderer, x, y + radius, x, y + h - radius);
+        SDL_RenderDrawLine(renderer, x + w - 1, y + radius, x + w - 1, y + h - radius);
     }
 
     SDL_SetRenderDrawColor(renderer, orig_r, orig_g, orig_b, orig_a);
