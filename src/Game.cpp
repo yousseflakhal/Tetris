@@ -1055,19 +1055,47 @@ void Game::holdPiece() {
 }
 
 void Game::renderHoldPiece() {
-    int previewCellSize = cellSize * 0.75;
-    int holdBoxWidth = previewCellSize * 5;
-    int holdBoxHeight = previewCellSize * 5;
+    const int holdBoxX = 20;
+    const int holdBoxY = 70;
+    const int holdBoxWidth = 150;
+    const int holdBoxHeight = 180;
+    const int cornerRadius = 10;
+    const int margin = 5;
+    const int titleAreaHeight = 40;
 
-    int holdBoxX = 20;
-    int holdBoxY = 70;
+    drawRoundedRect(renderer, holdBoxX, holdBoxY, holdBoxWidth, holdBoxHeight, 
+                   cornerRadius, {255, 255, 255, 255}, 255, true);
+    
+    SDL_Rect innerRect = {
+        holdBoxX + margin,
+        holdBoxY + margin + titleAreaHeight,
+        holdBoxWidth - 2 * margin,
+        holdBoxHeight - 2 * margin - titleAreaHeight
+    };
+    drawRoundedRect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
+                   cornerRadius - 1, {20, 25, 51, 255}, 255, true);
 
-    SDL_Rect holdBox = {holdBoxX, holdBoxY, static_cast<int>(holdBoxWidth), static_cast<int>(holdBoxHeight)};
-    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-    SDL_RenderFillRect(renderer, &holdBox);
-
-    SDL_Color textColor = {255, 255, 255, 255};
-    renderText("HOLD", holdBoxX + 20, holdBoxY - 50, textColor);
+    SDL_Color titleColor = {20, 25, 51, 255};
+    TTF_Font* titleFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 24);
+    if (!titleFont) titleFont = font;
+    
+    SDL_Surface* textSurface = TTF_RenderText_Blended(titleFont, "HOLD", titleColor);
+    if (textSurface) {
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        if (textTexture) {
+            int textX = holdBoxX + (holdBoxWidth - textSurface->w) / 2;
+            int textY = holdBoxY + (titleAreaHeight - textSurface->h) / 2;
+            
+            SDL_Rect textRect = {textX, textY, textSurface->w, textSurface->h};
+            SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+            SDL_DestroyTexture(textTexture);
+        }
+        SDL_FreeSurface(textSurface);
+    }
+    
+    if (titleFont != font) {
+        TTF_CloseFont(titleFont);
+    }
 
     if (!resumeCountdownActive && heldShape.has_value()) {
         auto localCoords = heldShape->getLocalCoords();
@@ -1082,13 +1110,14 @@ void Game::renderHoldPiece() {
             maxY = std::max(maxY, coord.second);
         }
 
+        int previewCellSize = cellSize * 0.75;
         int shapePixelWidth = (maxX - minX + 1) * previewCellSize;
         int shapePixelHeight = (maxY - minY + 1) * previewCellSize;
 
-        int drawX = holdBoxX + (holdBoxWidth - shapePixelWidth) / 2;
-        int drawY = holdBoxY + (holdBoxHeight - shapePixelHeight) / 2;
+        int drawX = holdBoxX + margin + (innerRect.w - shapePixelWidth) / 2;
+        int drawY = holdBoxY + margin + titleAreaHeight + 
+                   (innerRect.h - shapePixelHeight) / 2;
 
-        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
         const int gap = 1;
         const int previewCellDrawSize = previewCellSize - 2 * gap;
         const int radius = 1;
@@ -1102,7 +1131,8 @@ void Game::renderHoldPiece() {
                            previewCellDrawSize, previewCellDrawSize,
                            radius,
                            color,
-                           color.a);
+                           color.a,
+                           true);
         }
     }
 }
