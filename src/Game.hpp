@@ -63,7 +63,6 @@ private:
     bool ignoreNextMouseClick;
     bool isPaused;
     bool resumeCountdownActive;
-    bool mouseControlEnabled;
     bool waitingForKey = false;
     Action actionToRebind;
     Screen currentScreen;
@@ -75,9 +74,10 @@ private:
     Uint32 gameStartTime = 0;
     Uint32 totalPausedTime = 0;
     Uint32 pauseStartTime = 0;
-    Uint32 countdownStartTime = 0;
     bool isTimingPaused = false;
     bool startGameTimerAfterCountdown = false;
+    bool mouseControlEnabled;
+    Uint32 countdownStartTime = 0;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;

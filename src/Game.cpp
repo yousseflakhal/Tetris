@@ -27,12 +27,11 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       ignoreNextMouseClick(false),
       isPaused(false),
       resumeCountdownActive(false),
-      countdownStartTime(0),
-      mouseControlEnabled(true),
       currentScreen(Screen::Main),
       isMusicPlaying(false),
       gameStartTime(0),
-      startGameTimerAfterCountdown(true)
+      startGameTimerAfterCountdown(true),
+      mouseControlEnabled(true)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
@@ -722,7 +721,7 @@ void Game::render() {
         }
     }
 
-    if (!isPaused && !resumeCountdownActive && !isGameOver() && currentScreen == Screen::Main || resumeCountdownActive) {
+    if ( (!isPaused && !resumeCountdownActive && !isGameOver() && currentScreen == Screen::Main) || resumeCountdownActive ) {
         Uint32 ms = getElapsedGameTime();
         int seconds = (ms / 1000) % 60;
         int minutes = (ms / 1000) / 60;
