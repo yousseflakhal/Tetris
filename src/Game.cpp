@@ -853,21 +853,53 @@ void Game::autoRotateCurrentShape(int targetGridX) {
 
 
 void Game::renderNextPieces() {
-    int sidebarX = board.getCols() * cellSize + 300;
-    int sidebarY = 70;
+    const int sidebarX = board.getCols() * cellSize + 300;
+    const int sidebarY = 70;
+    const int sidebarWidth = 150;
+    const int sidebarHeight = 400;
+    const int cornerRadius = 10;
+    const int margin = 5;
+    const int titleAreaHeight = 40;
+    
+    drawRoundedRect(renderer, sidebarX, sidebarY, sidebarWidth, sidebarHeight, 
+                   cornerRadius, {255, 255, 255, 255}, 255, true);
+    
+    SDL_Rect innerRect = {
+        sidebarX + margin,
+        sidebarY + margin + titleAreaHeight,
+        sidebarWidth - 2 * margin,
+        sidebarHeight - 2 * margin - titleAreaHeight
+    };
+    drawRoundedRect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
+                   cornerRadius - 1, {20, 25, 51, 255}, 255, true);
 
-    SDL_Rect sidebarRect = {sidebarX, sidebarY, 150, 400};
-    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-    SDL_RenderFillRect(renderer, &sidebarRect);
-
-    SDL_Color textColor = {255, 255, 255, 255};
-    renderText("NEXT", sidebarX + 20, sidebarY - 50, textColor);
+    SDL_Color titleColor = {20, 25, 51, 255};
+    TTF_Font* titleFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 24);
+    if (!titleFont) titleFont = font;
+    
+    SDL_Surface* textSurface = TTF_RenderText_Blended(titleFont, "NEXT", titleColor);
+    if (textSurface) {
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        if (textTexture) {
+            int textX = sidebarX + (sidebarWidth - textSurface->w) / 2;
+            int textY = sidebarY + (titleAreaHeight - textSurface->h) / 2;
+            
+            SDL_Rect textRect = {textX, textY, textSurface->w, textSurface->h};
+            SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+            SDL_DestroyTexture(textTexture);
+        }
+        SDL_FreeSurface(textSurface);
+    }
+    
+    if (titleFont != font) {
+        TTF_CloseFont(titleFont);
+    }
 
     if (resumeCountdownActive) return;
 
     int previewCellSize = cellSize * 0.75;
     int spacing = 20;
-    int slotHeight = 100;
+    int slotHeight = 80;
 
     for (size_t i = 0; i < std::min(nextPieces.size(), size_t(3)); i++) {
         const auto& shape = nextPieces[i];
@@ -886,10 +918,10 @@ void Game::renderNextPieces() {
         int shapePixelWidth = (maxX - minX + 1) * previewCellSize;
         int shapePixelHeight = (maxY - minY + 1) * previewCellSize;
 
-        int drawX = sidebarX + (150 - shapePixelWidth) / 2;
-        int drawY = sidebarY + spacing + i * (slotHeight + spacing) + (slotHeight - shapePixelHeight) / 2;
+        int drawX = sidebarX + margin + (innerRect.w - shapePixelWidth) / 2;
+        int drawY = innerRect.y + spacing + i * (slotHeight + spacing) + 
+                   (slotHeight - shapePixelHeight) / 2;
 
-        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
         const int gap = 1;
         const int previewCellDrawSize = previewCellSize - 2 * gap;
         const int radius = 1;
@@ -903,11 +935,11 @@ void Game::renderNextPieces() {
                            previewCellDrawSize, previewCellDrawSize,
                            radius,
                            color,
-                           color.a);
+                           color.a,
+                           true);
         }
     }
 }
-
 
 void Game::spawnNewShape() {
     if (nextPieces.empty()) {
