@@ -666,10 +666,25 @@ void Game::render() {
     }
 
     if (!isPaused && currentScreen != Screen::Settings && !isGameOver()) {
-        SDL_Color textColor = {255, 255, 255, 255};
-        renderText("Score: " + std::to_string(score), 10, 250, textColor);
-        renderText("Level: " + std::to_string(level), 10, 300, textColor);
-        renderText("Lines: " + std::to_string(totalLinesCleared), 10, 350, textColor);
+        const int cardWidth = 150;
+        const int cardHeight = 80;
+        const int cardMargin = 10;
+        const int cardsStartY = 550;
+        const int cornerRadius = 8;
+        
+        const int cardsX = 20;
+        const int scoreCardY = cardsStartY;
+        const int levelCardY = cardsStartY + cardHeight + cardMargin;
+        const int linesCardY = cardsStartY + 2*(cardHeight + cardMargin);
+        
+        renderInfoCard(cardsX, scoreCardY, cardWidth, cardHeight, cornerRadius,
+                      "SCORE", std::to_string(score));
+        
+        renderInfoCard(cardsX, levelCardY, cardWidth, cardHeight, cornerRadius,
+                      "LEVEL", std::to_string(level));
+        
+        renderInfoCard(cardsX, linesCardY, cardWidth, cardHeight, cornerRadius,
+                      "LINES", std::to_string(totalLinesCleared));
     }
 
     if (currentScreen == Screen::Settings) {
@@ -1219,4 +1234,59 @@ Uint32 Game::getElapsedGameTime() const {
     }
     
     return now - gameStartTime - pausedFor;
+}
+
+void Game::renderInfoCard(int x, int y, int width, int height, int radius, 
+                         const std::string& title, const std::string& value) {
+    const int margin = 5;
+    const int titleAreaHeight = 30;
+
+    drawRoundedRect(renderer, x, y, width, height, radius, 
+                   {255, 255, 255, 255}, 255, true);
+    
+    SDL_Rect innerRect = {
+        x + margin,
+        y + margin + titleAreaHeight,
+        width - 2 * margin,
+        height - 2 * margin - titleAreaHeight
+    };
+    drawRoundedRect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
+                   radius - 2, {20, 25, 51, 255}, 255, true);
+
+    SDL_Color titleColor = {20, 25, 51, 255};
+    TTF_Font* titleFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 20);
+    if (!titleFont) titleFont = font;
+    
+    SDL_Surface* titleSurface = TTF_RenderText_Blended(titleFont, title.c_str(), titleColor);
+    if (titleSurface) {
+        SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(renderer, titleSurface);
+        if (titleTexture) {
+            int textX = x + (width - titleSurface->w) / 2;
+            int textY = y + (titleAreaHeight - titleSurface->h) / 2;
+            SDL_Rect textRect = {textX, textY, titleSurface->w, titleSurface->h};
+            SDL_RenderCopy(renderer, titleTexture, nullptr, &textRect);
+            SDL_DestroyTexture(titleTexture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+    
+    SDL_Color valueColor = {255, 255, 255, 255};
+    TTF_Font* valueFont = TTF_OpenFont("fonts/DejaVuSans.ttf", 24);
+    if (!valueFont) valueFont = font;
+    
+    SDL_Surface* valueSurface = TTF_RenderText_Blended(valueFont, value.c_str(), valueColor);
+    if (valueSurface) {
+        SDL_Texture* valueTexture = SDL_CreateTextureFromSurface(renderer, valueSurface);
+        if (valueTexture) {
+            int textX = innerRect.x + (innerRect.w - valueSurface->w) / 2;
+            int textY = innerRect.y + (innerRect.h - valueSurface->h) / 2;
+            SDL_Rect textRect = {textX, textY, valueSurface->w, valueSurface->h};
+            SDL_RenderCopy(renderer, valueTexture, nullptr, &textRect);
+            SDL_DestroyTexture(valueTexture);
+        }
+        SDL_FreeSurface(valueSurface);
+    }
+    
+    if (titleFont != font) TTF_CloseFont(titleFont);
+    if (valueFont != font) TTF_CloseFont(valueFont);
 }

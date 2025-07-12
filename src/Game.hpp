@@ -114,4 +114,6 @@ private:
     void renderPauseMenu();
     void renderSettingsScreen();
     Uint32 getElapsedGameTime() const;
+    void renderInfoCard(int x, int y, int width, int height, int radius, 
+                       const std::string& title, const std::string& value);
 };
