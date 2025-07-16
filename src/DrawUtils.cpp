@@ -96,3 +96,33 @@ void drawUIMenuRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h,
         }
     }
 }
+
+void drawCardWithBorder(SDL_Renderer* renderer,
+                        int x, int y, int w, int h,
+                        int radius,
+                        SDL_Color bgColor,
+                        SDL_Color borderColor,
+                        int borderThickness = 2)
+{
+    for (int i = 0; i < borderThickness; ++i) {
+        drawRoundedRect(
+            renderer,
+            x + i, y + i,
+            w - 2 * i, h - 2 * i,
+            std::max(0, radius - i),
+            borderColor,
+            borderColor.a,
+            false
+        );
+    }
+
+    drawRoundedRect(
+        renderer,
+        x + borderThickness, y + borderThickness,
+        w - 2 * borderThickness, h - 2 * borderThickness,
+        std::max(0, radius - borderThickness),
+        bgColor,
+        bgColor.a,
+        true
+    );
+}

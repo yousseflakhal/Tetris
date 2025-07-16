@@ -219,9 +219,9 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     resetControlsBtn = FormUI::Button(
         "Reset Controls",
-        windowWidth / 2 - 100,
-        windowHeight - 100,
-        200,
+        windowWidth / 2 + 50,
+        windowHeight - 300,
+        150,
         40,
         [this]() {
             keyBindings = {
@@ -240,8 +240,21 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         smallFont
     );
     resetControlsBtn->visible = false;
-    
 
+    doneBtn = FormUI::Button(
+        "Done",
+        windowWidth / 2 - 100,
+        windowHeight - 100,
+        200,
+        40,
+        [this]() { 
+            currentScreen = Screen::Main;
+            resetControlsBtn->visible = false;
+            doneBtn->visible = false;
+        },
+        smallFont
+    );
+    doneBtn->visible = false;
 
     spawnNewShape();
     resumeCountdownActive = true;
@@ -691,6 +704,7 @@ void Game::render() {
         for (auto& label : controlLabels) label->visible = true;
         for (auto& button : controlButtons) button->visible = true;
         resetControlsBtn->visible = true;
+        doneBtn->visible = true;
         resumeBtn->visible    = false;
         newGameBtn->visible   = false;
         quitBtn->visible      = false;
@@ -716,6 +730,7 @@ void Game::render() {
         mouseControlCheckbox->visible = false;
         soundCheckbox->visible = false;
         resetControlsBtn->visible = false;
+        doneBtn->visible = false;
     }
 
     FormUI::Render(renderer);
@@ -1237,8 +1252,7 @@ void Game::renderPauseMenu() {
     const int cardY = (windowHeight - cardHeight) / 2;
     const int cornerRadius = 15;
 
-    drawUIMenuRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, 
-                   cornerRadius, {20, 25, 51, 180}, 180);
+    drawCardWithBorder(renderer, cardX, cardY, cardWidth, cardHeight,cornerRadius, {20, 25, 51, 180}, {255, 255, 255, 255}, 2);
     
     SDL_Color textColor = {255, 255, 255, 255};
     renderText("PAUSED", windowWidth / 2 - 60, cardY + 30, textColor);
@@ -1257,12 +1271,32 @@ void Game::renderPauseMenu() {
 }
 
 void Game::renderSettingsScreen() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+    const int cardWidth = 500;
+    const int cardHeight = 800;
+    const int cardX = (windowWidth - cardWidth) / 2;
+    const int cardY = (windowHeight - cardHeight) / 2;
+    const int cornerRadius = 18;
 
+    drawCardWithBorder(renderer, cardX, cardY, cardWidth, cardHeight, cornerRadius, {20, 25, 51, 230}, {255, 255, 255, 255}, 2);  
     SDL_Color white = {255, 255, 255, 255};
-    renderText("SETTINGS", windowWidth / 2 - 60, 50, white);
+    renderText("SETTINGS", cardX + (cardWidth - 180) / 2, cardY + 32, white);
+
+    mouseControlCheckbox->bounds.x = cardX + (cardWidth - mouseControlCheckbox->bounds.w) / 2;
+    mouseControlCheckbox->bounds.y = cardY + 100;
+
+    soundCheckbox->bounds.x = cardX + (cardWidth - soundCheckbox->bounds.w) / 2;
+    soundCheckbox->bounds.y = cardY + 150;
+
+    int controlStartY = cardY + 210;
+    for (size_t i = 0; i < controlLabels.size(); ++i) {
+        controlLabels[i]->bounds.x = cardX + 40;
+        controlLabels[i]->bounds.y = controlStartY + int(i) * 40;
+
+        controlButtons[i]->bounds.x = cardX + cardWidth - 240;
+        controlButtons[i]->bounds.y = controlStartY + int(i) * 40;
+    }
 }
+
 
 Uint32 Game::getElapsedGameTime() const {
     if (gameStartTime == 0) {

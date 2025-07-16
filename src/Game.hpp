@@ -86,6 +86,7 @@ private:
     std::shared_ptr<UIButton> gameOverNewGameBtn;
     std::shared_ptr<UIButton> gameOverQuitBtn;
     std::shared_ptr<UIButton> resetControlsBtn;
+    std::shared_ptr<UIButton> doneBtn;
     std::shared_ptr<UICheckbox> mouseControlCheckbox;
     std::shared_ptr<UICheckbox> soundCheckbox;
     std::vector<std::shared_ptr<UILabel>> controlLabels;
