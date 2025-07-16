@@ -68,7 +68,6 @@ public:
 
 private:
     std::string text;
-    SDL_Rect bounds;
     TTF_Font* font = nullptr;
     SDL_Color color = {255, 255, 255, 255};
 };
@@ -87,7 +86,6 @@ public:
 
 private:
     std::string label;
-    SDL_Rect bounds;
     bool hovered = false;
     bool* linkedValue = nullptr;
     TTF_Font* font = nullptr;
@@ -109,7 +107,6 @@ public:
 
 private:
     std::string label;
-    SDL_Rect bounds;
     std::string* linkedText;
     int maxLength = 32;
     bool hovered = false;
@@ -132,7 +129,6 @@ public:
 
 private:
     std::string label;
-    SDL_Rect bounds;
     float* linkedValue = nullptr;
     float minValue = 0.0f;
     float maxValue = 1.0f;
