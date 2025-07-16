@@ -665,27 +665,25 @@ void Game::render() {
         renderSettingsScreen();
     }
 
-    if (!isPaused && currentScreen != Screen::Settings && !isGameOver()) {
-        const int cardWidth = 150;
-        const int cardHeight = 80;
-        const int cardMargin = 10;
-        const int cardsStartY = 550;
-        const int cornerRadius = 8;
-        
-        const int cardsX = 20;
-        const int scoreCardY = cardsStartY;
-        const int levelCardY = cardsStartY + cardHeight + cardMargin;
-        const int linesCardY = cardsStartY + 2*(cardHeight + cardMargin);
-        
-        renderInfoCard(cardsX, scoreCardY, cardWidth, cardHeight, cornerRadius,
-                      "SCORE", std::to_string(score));
-        
-        renderInfoCard(cardsX, levelCardY, cardWidth, cardHeight, cornerRadius,
-                      "LEVEL", std::to_string(level));
-        
-        renderInfoCard(cardsX, linesCardY, cardWidth, cardHeight, cornerRadius,
-                      "LINES", std::to_string(totalLinesCleared));
-    }
+    const int cardWidth = 150;
+    const int cardHeight = 80;
+    const int cardMargin = 10;
+    const int cardsStartY = 550;
+    const int cornerRadius = 8;
+    
+    const int cardsX = 20;
+    const int scoreCardY = cardsStartY;
+    const int levelCardY = cardsStartY + cardHeight + cardMargin;
+    const int linesCardY = cardsStartY + 2*(cardHeight + cardMargin);
+    
+    renderInfoCard(cardsX, scoreCardY, cardWidth, cardHeight, cornerRadius,
+                    "SCORE", std::to_string(score));
+    
+    renderInfoCard(cardsX, levelCardY, cardWidth, cardHeight, cornerRadius,
+                    "LEVEL", std::to_string(level));
+    
+    renderInfoCard(cardsX, linesCardY, cardWidth, cardHeight, cornerRadius,
+                    "LINES", std::to_string(totalLinesCleared));
 
     if (currentScreen == Screen::Settings) {
         mouseControlCheckbox->visible = true;
@@ -898,19 +896,18 @@ void Game::renderNextPieces() {
         if (textTexture) {
             int textX = sidebarX + (sidebarWidth - textSurface->w) / 2;
             int textY = sidebarY + (titleAreaHeight - textSurface->h) / 2;
-            
             SDL_Rect textRect = {textX, textY, textSurface->w, textSurface->h};
             SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
             SDL_DestroyTexture(textTexture);
         }
         SDL_FreeSurface(textSurface);
     }
-    
     if (titleFont != font) {
         TTF_CloseFont(titleFont);
     }
 
-    if (resumeCountdownActive) return;
+    bool showNextPieces = (!resumeCountdownActive && !isPaused && currentScreen != Screen::Settings && !isGameOver());
+    if (!showNextPieces) return;
 
     int previewCellSize = cellSize * 0.75;
     int spacing = 20;
@@ -944,7 +941,6 @@ void Game::renderNextPieces() {
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
-            
             drawRoundedRect(renderer, 
                            x, y,
                            previewCellDrawSize, previewCellDrawSize,
@@ -955,6 +951,7 @@ void Game::renderNextPieces() {
         }
     }
 }
+
 
 void Game::spawnNewShape() {
     if (nextPieces.empty()) {
@@ -1100,19 +1097,18 @@ void Game::renderHoldPiece() {
         if (textTexture) {
             int textX = holdBoxX + (holdBoxWidth - textSurface->w) / 2;
             int textY = holdBoxY + (titleAreaHeight - textSurface->h) / 2;
-            
             SDL_Rect textRect = {textX, textY, textSurface->w, textSurface->h};
             SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
             SDL_DestroyTexture(textTexture);
         }
         SDL_FreeSurface(textSurface);
     }
-    
     if (titleFont != font) {
         TTF_CloseFont(titleFont);
     }
 
-    if (!resumeCountdownActive && heldShape.has_value()) {
+    bool showHeldPiece = (!resumeCountdownActive && !isPaused && currentScreen != Screen::Settings && !isGameOver());
+    if (showHeldPiece && heldShape.has_value()) {
         auto localCoords = heldShape->getLocalCoords();
         SDL_Color color = heldShape->getColor();
 
@@ -1140,7 +1136,6 @@ void Game::renderHoldPiece() {
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
-            
             drawRoundedRect(renderer, 
                            x, y,
                            previewCellDrawSize, previewCellDrawSize,
@@ -1151,6 +1146,7 @@ void Game::renderHoldPiece() {
         }
     }
 }
+
 
 void Game::renderGameOverScreen() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
