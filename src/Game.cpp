@@ -1204,12 +1204,32 @@ void Game::updateSpeed() {
 }
 
 void Game::renderPauseMenu() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
-    SDL_Rect overlay = {0, 0, windowWidth, windowHeight};
-    SDL_RenderFillRect(renderer, &overlay);
-
+    const int cardWidth = 400;
+    const int cardHeight = 400;
+    const int cardX = (windowWidth - cardWidth) / 2;
+    const int cardY = (windowHeight - cardHeight) / 2;
+    const int cornerRadius = 15;
+    
+    drawRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, 
+                   cornerRadius, {20, 25, 51, 180}, 180, true);
+    
+    drawRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, 
+                   cornerRadius, {255, 255, 255, 255}, 255, false);
+    
     SDL_Color textColor = {255, 255, 255, 255};
-    renderText("PAUSED", windowWidth / 2 - 60, windowHeight / 2 - 180, textColor);
+    renderText("PAUSED", windowWidth / 2 - 60, cardY + 30, textColor);
+    
+    resumeBtn->bounds.x = windowWidth / 2 - 100;
+    resumeBtn->bounds.y = cardY + 80;
+    
+    newGameBtn->bounds.x = windowWidth / 2 - 100;
+    newGameBtn->bounds.y = cardY + 150;
+    
+    settingsBtn->bounds.x = windowWidth / 2 - 100;
+    settingsBtn->bounds.y = cardY + 220;
+    
+    quitBtn->bounds.x = windowWidth / 2 - 100;
+    quitBtn->bounds.y = cardY + 290;
 }
 
 void Game::renderSettingsScreen() {
