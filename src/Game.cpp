@@ -1149,14 +1149,32 @@ void Game::renderHoldPiece() {
 
 
 void Game::renderGameOverScreen() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
-    SDL_Rect overlay = {0, 0, windowWidth, windowHeight};
-    SDL_RenderFillRect(renderer, &overlay);
+    const int cardWidth = 400;
+    const int cardHeight = 400;
+    const int cardX = (windowWidth - cardWidth) / 2;
+    const int cardY = (windowHeight - cardHeight) / 2;
+    const int cornerRadius = 18;
+
+    drawRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, cornerRadius, {20, 25, 51, 240}, 240);
 
     SDL_Color textColor = {255, 255, 255, 255};
-    int centerX = windowWidth / 2;
-    renderText("GAME OVER", centerX - 100, windowHeight / 2 - 100, textColor);
+    renderText("GAME OVER", cardX + 90, cardY + 40, textColor);
+
+    renderText("Score:",  cardX + 60, cardY + 130, textColor);
+    renderText(std::to_string(score),  cardX + 200, cardY + 130, textColor);
+
+    renderText("Lines:",  cardX + 60, cardY + 180, textColor);
+    renderText(std::to_string(totalLinesCleared), cardX + 200, cardY + 180, textColor);
+
+    renderText("Level:",  cardX + 60, cardY + 230, textColor);
+    renderText(std::to_string(level), cardX + 200, cardY + 230, textColor);
+
+    gameOverNewGameBtn->bounds.x = cardX + 40;
+    gameOverNewGameBtn->bounds.y = cardY + 300;
+    gameOverQuitBtn->bounds.x    = cardX + 210;
+    gameOverQuitBtn->bounds.y    = cardY + 300;
 }
+
 
 
 void Game::resetGame() {
