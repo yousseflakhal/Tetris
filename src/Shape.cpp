@@ -134,38 +134,32 @@ void Shape::draw(SDL_Renderer* renderer, int cellSize, int offsetX, int offsetY,
     const int gap = 1;
     const int cellDrawSize = cellSize - 2 * gap;
     const int radius = 2;
-    
+
     SDL_Color drawColor = color;
+    Uint8 alpha = 255;
 
     if (isShadow) {
-        drawColor.a = 100;
-        
+        drawColor.a = 80;
         for (const auto& coord : coords) {
             int x = offsetX + coord.first * cellSize + gap;
             int y = offsetY + coord.second * cellSize + gap;
-            
-            drawRoundedRect(renderer, 
-                            x, y, 
-                            cellDrawSize, cellDrawSize, 
-                            radius, 
-                            drawColor, 
-                            drawColor.a,
-                            false);
+            drawRoundedRect(renderer, x, y, cellDrawSize, cellDrawSize, radius, drawColor, drawColor.a, false);
         }
     } else {
         for (const auto& coord : coords) {
             int x = offsetX + coord.first * cellSize + gap;
             int y = offsetY + coord.second * cellSize + gap;
-            drawRoundedRect(renderer, 
-                            x, y, 
-                            cellDrawSize, cellDrawSize, 
-                            radius, 
-                            drawColor, 
-                            drawColor.a,
-                            true);
+            drawRoundedRect(renderer, x, y, cellDrawSize, cellDrawSize, radius, drawColor, drawColor.a, true);
+        }
+        SDL_Color borderColor = {0, 0, 0, 180};
+        for (const auto& coord : coords) {
+            int x = offsetX + coord.first * cellSize + gap;
+            int y = offsetY + coord.second * cellSize + gap;
+            drawRoundedRect(renderer, x, y, cellDrawSize, cellDrawSize, radius, borderColor, borderColor.a, false);
         }
     }
 }
+
 
 const std::vector<std::pair<int, int>>& Shape::getCoords() const {
     return coords;

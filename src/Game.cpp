@@ -1205,12 +1205,9 @@ void Game::renderPauseMenu() {
     const int cardX = (windowWidth - cardWidth) / 2;
     const int cardY = (windowHeight - cardHeight) / 2;
     const int cornerRadius = 15;
-    
-    drawRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, 
-                   cornerRadius, {20, 25, 51, 180}, 180, true);
-    
-    drawRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, 
-                   cornerRadius, {255, 255, 255, 255}, 255, false);
+
+    drawUIMenuRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, 
+                   cornerRadius, {20, 25, 51, 180}, 180);
     
     SDL_Color textColor = {255, 255, 255, 255};
     renderText("PAUSED", windowWidth / 2 - 60, cardY + 30, textColor);
