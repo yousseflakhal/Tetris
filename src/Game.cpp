@@ -1169,10 +1169,23 @@ void Game::renderGameOverScreen() {
     renderText("Level:",  cardX + 60, cardY + 230, textColor);
     renderText(std::to_string(level), cardX + 200, cardY + 230, textColor);
 
-    gameOverNewGameBtn->bounds.x = cardX + 40;
-    gameOverNewGameBtn->bounds.y = cardY + 300;
-    gameOverQuitBtn->bounds.x    = cardX + 210;
-    gameOverQuitBtn->bounds.y    = cardY + 300;
+    const int buttonWidth = 180;
+    const int buttonHeight = 40;
+    const int buttonSpacing = 20;
+
+    const int buttonX = cardX + (cardWidth - buttonWidth) / 2;
+    const int newGameY = cardY + 280;
+    const int quitY = newGameY + buttonHeight + buttonSpacing;
+
+    gameOverNewGameBtn->bounds.x = buttonX;
+    gameOverNewGameBtn->bounds.y = newGameY;
+    gameOverNewGameBtn->bounds.w = buttonWidth;
+    gameOverNewGameBtn->bounds.h = buttonHeight;
+
+    gameOverQuitBtn->bounds.x = buttonX;
+    gameOverQuitBtn->bounds.y = quitY;
+    gameOverQuitBtn->bounds.w = buttonWidth;
+    gameOverQuitBtn->bounds.h = buttonHeight;
 }
 
 
