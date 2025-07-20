@@ -654,10 +654,14 @@ void Game::render() {
         SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
     }
 
-    board.draw(renderer, 200, 10, !resumeCountdownActive);
-    if (!resumeCountdownActive && !isGameOver()) {
-        shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
-        currentShape.draw(renderer, board.getCellSize(), 200, 10);
+    if (isPaused || currentScreen == Screen::Settings) {
+        board.draw(renderer, 200, 10, false);
+    } else {
+        board.draw(renderer, 200, 10, !resumeCountdownActive);
+        if (!resumeCountdownActive && !isGameOver()) {
+            shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
+            currentShape.draw(renderer, board.getCellSize(), 200, 10);
+        }
     }
     renderNextPieces();
     renderHoldPiece();
