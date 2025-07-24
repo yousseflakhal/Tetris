@@ -774,27 +774,6 @@ bool Game::isGameOver() const {
     return board.isOccupied(currentShape.getCoords(), 0, 0);
 }
 
-int Game::evaluateLanding(const Shape &candidate) {
-    int contact = 0;
-    const auto &grid = board.getGrid();
-    int rows = board.getRows();
-
-    for (const auto &coord : candidate.getCoords()) {
-        int x = coord.first;
-        int y = coord.second;
-        if (y == rows - 1 || grid[y + 1][x] != 0) {
-            contact++;
-        }
-    }
-    
-    int landingHeight = 0;
-    for (const auto &coord : candidate.getCoords()) {
-        landingHeight += coord.second;
-    }
-
-    return contact * 10 - landingHeight;
-}
-
 void Game::autoRotateCurrentShape(int targetGridX) {
     (void)targetGridX;
 
@@ -867,12 +846,16 @@ void Game::autoRotateCurrentShape(int targetGridX) {
             bumpiness += std::abs(heights[i] - heights[i + 1]);
         }
 
-        int score = 
-            linesCleared * 10000 +
-            aggregateHeight * (-7) +
-            holes * (-100) +
-            potentialHoles * (-25) +
-            bumpiness * (-3);
+        int contacts = countContactSegments(dropped, tempBoard);
+
+        // Adjustable weights
+        int score =
+            linesCleared     * 10000 +
+            aggregateHeight  *   -7  +
+            holes            * -100  +
+            potentialHoles   *  -25  +
+            bumpiness        *   -3  +
+            contacts         *   500;
 
         if (score > bestScore) {
             bestScore = score;
@@ -1371,4 +1354,22 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
     
     if (titleFont != font) TTF_CloseFont(titleFont);
     if (valueFont != font) TTF_CloseFont(valueFont);
+}
+
+int Game::countContactSegments(const Shape& shape, const Board& board) {
+    const auto& coords = shape.getCoords();
+    const auto& grid = board.getGrid();
+    int rows = board.getRows();
+    int cols = board.getCols();
+
+    int contactCount = 0;
+
+    for (const auto& [x, y] : coords) {
+        if (y == rows - 1 || (y + 1 < rows && grid[y + 1][x] != 0)) contactCount++;
+        if (y == 0 || (y - 1 >= 0 && grid[y - 1][x] != 0)) contactCount++;
+        if (x == 0 || (x - 1 >= 0 && grid[y][x - 1] != 0)) contactCount++;
+        if (x == cols - 1 || (x + 1 < cols && grid[y][x + 1] != 0)) contactCount++;
+    }
+
+    return contactCount;
 }

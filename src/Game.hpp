@@ -101,7 +101,6 @@ private:
     void render();
     void spawnNewShape();
     bool isGameOver() const;
-    int evaluateLanding(const Shape &candidate);
     void autoRotateCurrentShape(int targetGridX);
     void renderNextPieces();
     void checkLevelUp();
@@ -117,4 +116,5 @@ private:
     Uint32 getElapsedGameTime() const;
     void renderInfoCard(int x, int y, int width, int height, int radius, 
                        const std::string& title, const std::string& value);
+    int countContactSegments(const Shape& shape, const Board& board);
 };
