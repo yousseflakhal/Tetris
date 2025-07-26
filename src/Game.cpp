@@ -657,6 +657,7 @@ void Game::render() {
     if (isPaused || currentScreen == Screen::Settings) {
         board.draw(renderer, 200, 10, false);
     } else {
+        board.updateLandingAnimations();
         board.draw(renderer, 200, 10, !resumeCountdownActive);
         if (!resumeCountdownActive && !isGameOver()) {
             shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);

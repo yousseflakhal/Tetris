@@ -18,6 +18,7 @@ public:
 
     bool isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const;
     void placeShape(const Shape& shape);
+    Uint8 landingAlpha(int x, int y, Uint32 now) const;
     int clearFullLines();
 
     void draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const;
@@ -31,6 +32,19 @@ public:
     std::pair<std::vector<std::pair<int, int>>, bool> getSurfaceCoordsAndFlatStatus(int x) const;
     void clearBoard();
     void finalizeLineClear();
+
+    struct LandingAnim {
+        int x, y;
+        Uint32 startTime;
+    };
+
+    std::vector<LandingAnim> landingAnims;
+
+    static constexpr Uint32 FADE_OUT_MS = 200;
+    static constexpr Uint32 FADE_IN_MS  = 100;
+    void updateLandingAnimations();                    
+
+    
 
 private:
     int rows, cols, cellSize;
