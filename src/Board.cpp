@@ -180,7 +180,7 @@ int Board::countHoles() const {
 
 std::pair<std::vector<std::pair<int, int>>, bool> Board::getSurfaceCoordsAndFlatStatus(int x) const {
     std::vector<std::pair<int, int>> surfaceCoords;
-    
+
     if (x < 1 || x >= cols - 1) {
         return {surfaceCoords, false};
     }
@@ -197,6 +197,10 @@ std::pair<std::vector<std::pair<int, int>>, bool> Board::getSurfaceCoordsAndFlat
     if (heightMid == -1) heightMid = rows - 1;
     if (heightRight == -1) heightRight = rows - 1;
 
+    heightLeft = std::clamp(heightLeft, 0, rows - 1);
+    heightMid = std::clamp(heightMid, 0, rows - 1);
+    heightRight = std::clamp(heightRight, 0, rows - 1);
+
     surfaceCoords.push_back({x - 1, heightLeft});
     surfaceCoords.push_back({x, heightMid});
     surfaceCoords.push_back({x + 1, heightRight});
@@ -205,6 +209,7 @@ std::pair<std::vector<std::pair<int, int>>, bool> Board::getSurfaceCoordsAndFlat
 
     return {surfaceCoords, isFlat};
 }
+
 
 void Board::clearBoard() {
     for (int y = 0; y < rows; ++y) {
