@@ -36,6 +36,10 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Initialization failed");
     }
+    int imgFlags = IMG_INIT_PNG;
+    if ((IMG_Init(imgFlags) & imgFlags) != imgFlags) {
+        throw std::runtime_error(std::string("IMG_Init failed: ") + IMG_GetError());
+    }
     if (TTF_Init() == -1) {
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
     }
@@ -272,12 +276,23 @@ Game::~Game() {
         SDL_DestroyTexture(backgroundTexture);
         backgroundTexture = nullptr;
     }
+    if (countdownFont && countdownFont != font) {
+        TTF_CloseFont(countdownFont);
+        countdownFont = nullptr;
+    }
     if (font) {
         TTF_CloseFont(font);
+        font = nullptr;
     }
-    if (soundEnabled) SoundManager::CleanUp();
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+
+    SoundManager::CleanUp();
+    Mix_CloseAudio();
+
+    if (renderer) SDL_DestroyRenderer(renderer);
+    if (window) SDL_DestroyWindow(window);
+
+    IMG_Quit();
+    TTF_Quit();
 }
 
 void Game::run() {

@@ -85,9 +85,10 @@ void SoundManager::StopGameOverMusic() {
 }
 
 void SoundManager::CleanUp() {
-    Mix_FreeChunk(moveSound);
-    Mix_FreeChunk(holdSound);
-    Mix_FreeChunk(dropSound);
-    Mix_FreeMusic(backgroundMusic);
-    Mix_FreeChunk(clearSound);
+    if (moveSound)       { Mix_FreeChunk(moveSound); moveSound = nullptr; }
+    if (holdSound)       { Mix_FreeChunk(holdSound); holdSound = nullptr; }
+    if (dropSound)       { Mix_FreeChunk(dropSound); dropSound = nullptr; }
+    if (clearSound)      { Mix_FreeChunk(clearSound); clearSound = nullptr; }
+    if (backgroundMusic) { Mix_FreeMusic(backgroundMusic); backgroundMusic = nullptr; }
+    if (gameOverMusic)   { Mix_FreeMusic(gameOverMusic); gameOverMusic = nullptr; }
 }
