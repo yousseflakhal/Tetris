@@ -51,6 +51,10 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
     }
 
+    countdownFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 80);
+    if (!countdownFont) {
+        countdownFont = font;
+    }
     window = SDL_CreateWindow(
         "Tetris",
         SDL_WINDOWPOS_CENTERED,
@@ -62,6 +66,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     if (!window) {
         throw std::runtime_error("Failed to create window");
     }
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
@@ -743,14 +749,21 @@ void Game::render() {
     if (resumeCountdownActive) {
         Uint32 now = SDL_GetTicks();
         Uint32 elapsed = now - countdownStartTime;
-        int countdownValue = 3 - (elapsed / 1000);
+        int countdownValue = 3 - static_cast<int>(elapsed / 1000);
 
         if (countdownValue > 0) {
+            Uint32 msInSecond = elapsed % 1000;
+            float scale = countdownScale(msInSecond);
+
             SDL_Color white = {255, 255, 255, 255};
-            renderText(std::to_string(countdownValue),
-                       windowWidth / 2 - 40,
-                       windowHeight / 2 - 40,
-                       white);
+            renderTextCenteredScaled(
+                std::to_string(countdownValue),
+                windowWidth / 2,
+                windowHeight / 2,
+                white,
+                scale,
+                countdownFont ? countdownFont : font
+            );
         }
     }
 
@@ -1373,4 +1386,80 @@ int Game::countContactSegments(const Shape& shape, const Board& board) {
     }
 
     return contactCount;
+}
+
+float Game::easeOutCubic(float t) {
+    return 1.0f - std::pow(1.0f - t, 3.0f);
+}
+
+float Game::easeInOutQuad(float t) {
+    return (t < 0.5f) ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) * 0.5f;
+}
+
+float Game::countdownScale(Uint32 msInSecond) const {
+    const float growDur   = 550.0f;
+    const float holdDur   = 200.0f;
+    const float settleDur = 250.0f;
+
+    const float startScale     = 0.65f;
+    const float overshootScale = 1.25f;
+    const float finalScale     = 1.00f;
+
+    float t = static_cast<float>(msInSecond);
+
+    if (t < growDur) {
+        float p = t / growDur;
+        return startScale + (overshootScale - startScale) * easeOutCubic(p);
+    } else if (t < growDur + holdDur) {
+        return overshootScale;
+    } else {
+        float p = (t - (growDur + holdDur)) / settleDur;
+        if (p > 1.0f) p = 1.0f;
+        return overshootScale + (finalScale - overshootScale) * easeInOutQuad(p);
+    }
+}
+
+void Game::renderTextCenteredScaled(const std::string& text, int cx, int cy,
+                                    SDL_Color color, float scale, TTF_Font* useFont)
+{
+    if (!useFont || text.empty()) return;
+
+    SDL_Surface* surf = TTF_RenderText_Blended(useFont, text.c_str(), color);
+    if (!surf || surf->w == 0 || surf->h == 0) {
+        if (surf) SDL_FreeSurface(surf);
+        return;
+    }
+
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+    if (!tex) {
+        SDL_FreeSurface(surf);
+        return;
+    }
+
+    int w = surf->w;
+    int h = surf->h;
+
+    int dstW = static_cast<int>(w * scale);
+    int dstH = static_cast<int>(h * scale);
+    SDL_Rect dst { cx - dstW / 2, cy - dstH / 2, dstW, dstH };
+
+    SDL_Color shadowCol { 0, 0, 0, 160 };
+    SDL_Surface* shadowSurf = TTF_RenderText_Blended(useFont, text.c_str(), shadowCol);
+    if (shadowSurf) {
+        SDL_Texture* shadowTex = SDL_CreateTextureFromSurface(renderer, shadowSurf);
+        if (shadowTex) {
+            int sw = shadowSurf->w, sh = shadowSurf->h;
+            int sdw = static_cast<int>(sw * scale);
+            int sdh = static_cast<int>(sh * scale);
+            SDL_Rect shadowDst { cx - sdw / 2 + 4, cy - sdh / 2 + 4, sdw, sdh };
+            SDL_RenderCopy(renderer, shadowTex, nullptr, &shadowDst);
+            SDL_DestroyTexture(shadowTex);
+        }
+        SDL_FreeSurface(shadowSurf);
+    }
+
+    SDL_RenderCopy(renderer, tex, nullptr, &dst);
+
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(surf);
 }

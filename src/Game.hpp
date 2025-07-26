@@ -78,6 +78,7 @@ private:
     bool startGameTimerAfterCountdown = false;
     bool mouseControlEnabled;
     Uint32 countdownStartTime = 0;
+    TTF_Font* countdownFont = nullptr;
 
     std::shared_ptr<UIButton> newGameBtn;
     std::shared_ptr<UIButton> quitBtn;
@@ -114,7 +115,10 @@ private:
     void renderPauseMenu();
     void renderSettingsScreen();
     Uint32 getElapsedGameTime() const;
-    void renderInfoCard(int x, int y, int width, int height, int radius, 
-                       const std::string& title, const std::string& value);
+    void renderInfoCard(int x, int y, int width, int height, int radius, const std::string& title, const std::string& value);
     int countContactSegments(const Shape& shape, const Board& board);
+    float countdownScale(Uint32 msInSecond) const;
+    static float easeOutCubic(float t);
+    static float easeInOutQuad(float t);
+    void renderTextCenteredScaled(const std::string& text, int cx, int cy, SDL_Color color, float scale, TTF_Font* useFont);
 };
