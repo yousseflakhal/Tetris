@@ -218,22 +218,24 @@ void Board::clearBoard() {
 void Board::finalizeLineClear() {
     if (!isClearingLines) return;
 
-    // Remove full lines
+    std::sort(linesToClear.begin(), linesToClear.end(), std::greater<int>());
+
     for (int line : linesToClear) {
         grid.erase(grid.begin() + line);
         colorGrid.erase(colorGrid.begin() + line);
     }
 
-    int numLinesCleared = linesToClear.size();
+    int numLinesCleared = static_cast<int>(linesToClear.size());
     for (int i = 0; i < numLinesCleared; ++i) {
         grid.insert(grid.begin(), std::vector<int>(cols, 0));
-        colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0, 0, 0, 0}));
+        colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0,0,0,0}));
     }
 
     isClearingLines = false;
     linesToClear.clear();
     clearStartTime = 0;
 }
+
 
 void Board::updateLandingAnimations() {
     Uint32 now = SDL_GetTicks();
