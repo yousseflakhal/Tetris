@@ -10,6 +10,7 @@
 class Board {
 public:
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor);
+    ~Board();
 
     bool isClearingLines = false;
     int clearAnimationFrame = 0;
@@ -32,6 +33,7 @@ public:
     std::pair<std::vector<std::pair<int, int>>, bool> getSurfaceCoordsAndFlatStatus(int x) const;
     void clearBoard();
     void finalizeLineClear();
+    void initializeTexture(SDL_Renderer* renderer);
 
     struct LandingAnim {
         int x, y;
