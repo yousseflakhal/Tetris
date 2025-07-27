@@ -10,6 +10,7 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+#include <iostream>
 #include "Board.hpp"
 #include "Shape.hpp"
 #include "InputHandler.hpp"

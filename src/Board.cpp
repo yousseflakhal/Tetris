@@ -100,6 +100,8 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
     const int boardHeight = rows * cellSize;
     const int gridGap = 1;
 
+    std::unordered_set<int> clearLinesSet(linesToClear.begin(), linesToClear.end());
+
     drawRoundedRect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, 255, true);
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -111,8 +113,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
             const int cellDrawSize = cellSize - 2 * gridGap;
 
             bool isFullCell = grid[y][x] != 0;
-            bool isLineClearing = isClearingLines && 
-                                  std::find(linesToClear.begin(), linesToClear.end(), y) != linesToClear.end();
+            bool isLineClearing = isClearingLines && clearLinesSet.count(y) > 0;
 
             drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
                             2, {0, 0, 0, 255}, 255, true);
@@ -162,8 +163,6 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
-
-
 
 int Board::getRows() const {
     return rows;
