@@ -2,53 +2,51 @@
 
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
-      currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
-      canHold(true),
-      shadowShape(currentShape),
-      inputHandler(),
-      running(true),
-      lastMoveTime(SDL_GetTicks()),
-      speed(800),
-      cellSize(cellSize),
-      lastHorizontalMoveTime(0),
-      lastDownMoveTime(0),
-      lastRotationTime(0),
-      horizontalMoveDelay(50),
-      downMoveDelay(100),
-      rotationDelay(100),
-      windowWidth(windowWidth),
-      windowHeight(windowHeight),
-      nextPieces(),
-      level(1),
-      totalLinesCleared(0),
-      score(0),
-      font(nullptr),
-      heldShape(std::nullopt),
-      ignoreNextMouseClick(false),
-      isPaused(false),
-      resumeCountdownActive(false),
-      currentScreen(Screen::Main),
-      isMusicPlaying(false),
-      gameStartTime(0),
-      startGameTimerAfterCountdown(true),
-      mouseControlEnabled(true)
+    currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
+    canHold(true),
+    shadowShape(currentShape),
+    inputHandler(),
+    running(true),
+    lastMoveTime(SDL_GetTicks()),
+    speed(800),
+    cellSize(cellSize),
+    lastHorizontalMoveTime(0),
+    lastDownMoveTime(0),
+    lastRotationTime(0),
+    horizontalMoveDelay(50),
+    downMoveDelay(100),
+    rotationDelay(100),
+    windowWidth(windowWidth),
+    windowHeight(windowHeight),
+    nextPieces(),
+    level(1),
+    totalLinesCleared(0),
+    score(0),
+    font(nullptr),
+    heldShape(std::nullopt),
+    ignoreNextMouseClick(false),
+    isPaused(false),
+    resumeCountdownActive(false),
+    currentScreen(Screen::Main),
+    isMusicPlaying(false),
+    gameOverMusicPlayed(false),
+    soundEnabled(false),
+    lastSoundEnabled(false),
+    startGameTimerAfterCountdown(true),
+    mouseControlEnabled(true)
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL Initialization failed");
-    }
+
     int imgFlags = IMG_INIT_PNG;
-    if ((IMG_Init(imgFlags) & imgFlags) != imgFlags) {
+    if ((IMG_Init(imgFlags) & imgFlags) != imgFlags)
         throw std::runtime_error(std::string("IMG_Init failed: ") + IMG_GetError());
-    }
-    if (TTF_Init() == -1) {
+
+    if (TTF_Init() == -1)
         throw std::runtime_error("Failed to initialize SDL_ttf: " + std::string(TTF_GetError()));
-    }
 
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
         throw std::runtime_error("SDL_mixer initialization failed: " + std::string(Mix_GetError()));
-    }
-
-    if (soundEnabled) SoundManager::Load();
 
     font = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
     if (!font) {
@@ -272,18 +270,14 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 }
 
 Game::~Game() {
-    if (backgroundTexture) {
-        SDL_DestroyTexture(backgroundTexture);
-        backgroundTexture = nullptr;
+    if (soundEnabled && Mix_PlayingMusic()) {
+        SoundManager::StopBackgroundMusic();
+        SoundManager::StopGameOverMusic();
     }
-    if (countdownFont && countdownFont != font) {
-        TTF_CloseFont(countdownFont);
-        countdownFont = nullptr;
-    }
-    if (font) {
-        TTF_CloseFont(font);
-        font = nullptr;
-    }
+
+    if (backgroundTexture) SDL_DestroyTexture(backgroundTexture);
+    if (countdownFont && countdownFont != font) TTF_CloseFont(countdownFont);
+    if (font) TTF_CloseFont(font);
 
     SoundManager::CleanUp();
     Mix_CloseAudio();
@@ -294,6 +288,7 @@ Game::~Game() {
     IMG_Quit();
     TTF_Quit();
 }
+
 
 void Game::run() {
     while (running) {
@@ -312,7 +307,7 @@ void Game::processInput() {
             SoundManager::RestartBackgroundMusic();
             isMusicPlaying = true;
         } else {
-            SoundManager::PauseBackgroundMusic();
+            SoundManager::StopBackgroundMusic();
             isMusicPlaying = false;
         }
         lastSoundEnabled = soundEnabled;
@@ -593,40 +588,36 @@ void Game::update() {
     bool gameOver = isGameOver();
 
     if (resumeCountdownActive || isPaused || gameOver) {
-        if (gameOver) {
-            if (isMusicPlaying && !gameOverMusicPlayed) {
-                if (soundEnabled) SoundManager::PauseBackgroundMusic();
-                if (soundEnabled) SoundManager::PlayGameOverMusic();
-                isMusicPlaying = false;
-                gameOverMusicPlayed = true;
+        if (gameOver && !gameOverMusicPlayed) {
+            if (soundEnabled) {
+                SoundManager::StopBackgroundMusic();
+                SoundManager::PlayGameOverMusic();
             }
-        } else {
-            if (isMusicPlaying) {
-                if (soundEnabled) SoundManager::PauseBackgroundMusic();
-                isMusicPlaying = false;
-            }
+            isMusicPlaying = false;
+            gameOverMusicPlayed = true;
+        } 
+        else if (isMusicPlaying) {
+            if (soundEnabled) SoundManager::PauseBackgroundMusic();
+            isMusicPlaying = false;
         }
 
         if (resumeCountdownActive) {
             Uint32 now = SDL_GetTicks();
-            Uint32 elapsed = now - countdownStartTime;
-            if (elapsed >= 3000) {
+            if (now - countdownStartTime >= 3000) {
                 resumeCountdownActive = false;
-                if (!startGameTimerAfterCountdown) {
-                    totalPausedTime += elapsed;
-                }
                 if (startGameTimerAfterCountdown) {
                     gameStartTime = now;
                     startGameTimerAfterCountdown = false;
+                } else {
+                    totalPausedTime += now - countdownStartTime;
                 }
             }
-            return;
         }
         return;
     }
 
-    if (!isMusicPlaying) {
-        if (soundEnabled) SoundManager::ResumeBackgroundMusic();
+    if (!isMusicPlaying && soundEnabled) {
+        SoundManager::ResumeBackgroundMusic();
         isMusicPlaying = true;
     }
 
@@ -685,22 +676,39 @@ void Game::render() {
             currentShape.draw(renderer, board.getCellSize(), 200, 10);
         }
     }
+
     renderNextPieces();
     renderHoldPiece();
 
-    if (isGameOver()) {
+    bool settingsScreen = (currentScreen == Screen::Settings);
+    bool paused = isPaused && !settingsScreen;
+    bool gameOver = isGameOver();
+
+    mouseControlCheckbox->visible = settingsScreen;
+    soundCheckbox->visible = settingsScreen;
+    resetControlsBtn->visible = settingsScreen;
+    doneBtn->visible = settingsScreen;
+
+    for (auto& label : controlLabels) label->visible = settingsScreen;
+    for (auto& button : controlButtons) button->visible = settingsScreen;
+
+    resumeBtn->visible = paused;
+    newGameBtn->visible = paused;
+    settingsBtn->visible = paused;
+    quitBtn->visible = paused;
+
+    gameOverNewGameBtn->visible = gameOver;
+    gameOverQuitBtn->visible = gameOver;
+
+    if (gameOver) {
         renderGameOverScreen();
-        gameOverNewGameBtn->visible = true;
-        gameOverQuitBtn->visible    = true;
-    } else {
-        gameOverNewGameBtn->visible = false;
-        gameOverQuitBtn->visible    = false;
     }
-    
-    if (isPaused) {
+
+    if (paused) {
         renderPauseMenu();
     }
-    if (currentScreen == Screen::Settings) {
+
+    if (settingsScreen) {
         renderSettingsScreen();
     }
 
@@ -709,55 +717,18 @@ void Game::render() {
     const int cardMargin = 10;
     const int cardsStartY = 550;
     const int cornerRadius = 8;
-    
+
     const int cardsX = 20;
     const int scoreCardY = cardsStartY;
     const int levelCardY = cardsStartY + cardHeight + cardMargin;
-    const int linesCardY = cardsStartY + 2*(cardHeight + cardMargin);
-    
-    renderInfoCard(cardsX, scoreCardY, cardWidth, cardHeight, cornerRadius,
-                    "SCORE", std::to_string(score));
-    
-    renderInfoCard(cardsX, levelCardY, cardWidth, cardHeight, cornerRadius,
-                    "LEVEL", std::to_string(level));
-    
-    renderInfoCard(cardsX, linesCardY, cardWidth, cardHeight, cornerRadius,
-                    "LINES", std::to_string(totalLinesCleared));
+    const int linesCardY = cardsStartY + 2 * (cardHeight + cardMargin);
 
-    if (currentScreen == Screen::Settings) {
-        mouseControlCheckbox->visible = true;
-        soundCheckbox->visible = true;
-        for (auto& label : controlLabels) label->visible = true;
-        for (auto& button : controlButtons) button->visible = true;
-        resetControlsBtn->visible = true;
-        doneBtn->visible = true;
-        resumeBtn->visible    = false;
-        newGameBtn->visible   = false;
-        quitBtn->visible      = false;
-        settingsBtn->visible  = false;
-    } 
-    else if (isPaused) {
-        resumeBtn->visible    = true;
-        newGameBtn->visible   = true;
-        quitBtn->visible      = true;
-        settingsBtn->visible  = true;
-        for (auto& label : controlLabels) label->visible = false;
-        for (auto& button : controlButtons) button->visible = false;
-        mouseControlCheckbox->visible = false;
-        soundCheckbox->visible = false;
-    } 
-    else {
-        resumeBtn->visible    = false;
-        newGameBtn->visible   = false;
-        quitBtn->visible      = false;
-        settingsBtn->visible  = false;
-        for (auto& label : controlLabels) label->visible = false;
-        for (auto& button : controlButtons) button->visible = false;
-        mouseControlCheckbox->visible = false;
-        soundCheckbox->visible = false;
-        resetControlsBtn->visible = false;
-        doneBtn->visible = false;
-    }
+    renderInfoCard(cardsX, scoreCardY, cardWidth, cardHeight, cornerRadius,
+                   "SCORE", std::to_string(score));
+    renderInfoCard(cardsX, levelCardY, cardWidth, cardHeight, cornerRadius,
+                   "LEVEL", std::to_string(level));
+    renderInfoCard(cardsX, linesCardY, cardWidth, cardHeight, cornerRadius,
+                   "LINES", std::to_string(totalLinesCleared));
 
     FormUI::Render(renderer);
 
@@ -769,7 +740,6 @@ void Game::render() {
         if (countdownValue > 0) {
             Uint32 msInSecond = elapsed % 1000;
             float scale = countdownScale(msInSecond);
-
             SDL_Color white = {255, 255, 255, 255};
             renderTextCenteredScaled(
                 std::to_string(countdownValue),
@@ -782,7 +752,7 @@ void Game::render() {
         }
     }
 
-    if ( (!isPaused && !resumeCountdownActive && !isGameOver() && currentScreen == Screen::Main) || resumeCountdownActive ) {
+    if ((!paused && !resumeCountdownActive && !gameOver && currentScreen == Screen::Main) || resumeCountdownActive) {
         Uint32 ms = getElapsedGameTime();
         int seconds = (ms / 1000) % 60;
         int minutes = (ms / 1000) / 60;
@@ -797,6 +767,7 @@ void Game::render() {
 
     SDL_RenderPresent(renderer);
 }
+
 
 
 bool Game::isGameOver() const {
@@ -1222,27 +1193,38 @@ void Game::renderGameOverScreen() {
 
 
 void Game::resetGame() {
+    if (soundEnabled) {
+        SoundManager::StopBackgroundMusic();
+        SoundManager::StopGameOverMusic();
+    }
+
     board.clearBoard();
-    score = 0;
-    totalLinesCleared = 0;
+    score = totalLinesCleared = 0;
     level = 1;
     nextPieces.clear();
     canHold = true;
     heldShape.reset();
     spawnNewShape();
+
     running = true;
     ignoreNextMouseClick = true;
     resumeCountdownActive = true;
     countdownStartTime = SDL_GetTicks();
-    totalPausedTime = 0;
-    pauseStartTime = 0;
+    totalPausedTime = pauseStartTime = 0;
     startGameTimerAfterCountdown = true;
     gameStartTime = 0;
-    if (soundEnabled) SoundManager::StopGameOverMusic();
     gameOverMusicPlayed = false;
-    if (soundEnabled) SoundManager::RestartBackgroundMusic();
-    isMusicPlaying = true;
+
+    if (soundEnabled) {
+        SoundManager::RestartBackgroundMusic();
+        isMusicPlaying = true;
+    } else {
+        isMusicPlaying = false;
+    }
 }
+
+
+
 void Game::updateSpeed() {
     if (level == 0) speed = 800;
     else if (level == 1) speed = 717;

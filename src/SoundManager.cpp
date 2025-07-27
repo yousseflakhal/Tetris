@@ -84,6 +84,12 @@ void SoundManager::StopGameOverMusic() {
     }
 }
 
+void SoundManager::StopBackgroundMusic() {
+    if (Mix_PlayingMusic()) {
+        Mix_HaltMusic();
+    }
+}
+
 void SoundManager::CleanUp() {
     if (moveSound)       { Mix_FreeChunk(moveSound); moveSound = nullptr; }
     if (holdSound)       { Mix_FreeChunk(holdSound); holdSound = nullptr; }
