@@ -22,7 +22,6 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     level(1),
     totalLinesCleared(0),
     score(0),
-    font(nullptr),
     heldShape(std::nullopt),
     ignoreNextMouseClick(false),
     isPaused(false),
@@ -48,15 +47,18 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
         throw std::runtime_error("SDL_mixer initialization failed: " + std::string(Mix_GetError()));
 
-    font = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
-    if (!font) {
-        throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
-    }
+    fontDefault = TTF_OpenFont("fonts/DejaVuSans.ttf", 32);
+    if (!fontDefault) throw std::runtime_error("Failed to load font: " + std::string(TTF_GetError()));
 
-    countdownFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 80);
-    if (!countdownFont) {
-        countdownFont = font;
-    }
+    fontLarge = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 80);
+    if (!fontLarge) fontLarge = fontDefault;
+
+    fontMedium = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 24);
+    if (!fontMedium) fontMedium = fontDefault;
+
+    fontSmall = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 10);
+    if (!fontSmall) fontSmall = fontDefault;
+
     window = SDL_CreateWindow(
         "Tetris",
         SDL_WINDOWPOS_CENTERED,
@@ -83,9 +85,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
 
     srand(time(nullptr));
 
-    FormUI::Init(font);
-
-    TTF_Font* smallFont = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 10);
+    FormUI::Init(fontDefault);
 
     newGameBtn = FormUI::Button(
         "New Game",
@@ -141,7 +141,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         300,
         30,
         &mouseControlEnabled,
-        smallFont
+        fontSmall
     );
     mouseControlCheckbox->visible = false;
 
@@ -154,7 +154,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
         300,
         30,
         &soundEnabled,
-        smallFont
+        fontSmall
     );
     soundCheckbox->visible = false;
 
@@ -218,7 +218,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
             controlButtons[i]->setText("Press a key...");
         };
     
-        auto [label, button] = layout.addLabelButtonRow(labelText, keyLabel, buttonCallback, 200, 100, 30, smallFont, smallFont);
+        auto [label, button] = layout.addLabelButtonRow(labelText, keyLabel, buttonCallback, 200, 100, 30, fontSmall, fontSmall);
         label->visible = false;
         button->visible = false;
         controlLabels.push_back(label);
@@ -245,7 +245,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
                 controlButtons[i]->setText(SDL_GetKeyName(keyBindings[controlMappings[i].second]));
             }
         },
-        smallFont
+        fontSmall
     );
     resetControlsBtn->visible = false;
 
@@ -260,7 +260,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
             resetControlsBtn->visible = false;
             doneBtn->visible = false;
         },
-        smallFont
+        fontSmall
     );
     doneBtn->visible = false;
 
@@ -276,19 +276,29 @@ Game::~Game() {
     }
 
     if (backgroundTexture) SDL_DestroyTexture(backgroundTexture);
-    if (countdownFont && countdownFont != font) TTF_CloseFont(countdownFont);
-    if (font) TTF_CloseFont(font);
 
     SoundManager::CleanUp();
     Mix_CloseAudio();
 
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
+    
+    if (fontLarge && fontLarge != fontDefault) {
+        TTF_CloseFont(fontLarge);
+    }
+    if (fontMedium && fontMedium != fontDefault) {
+        TTF_CloseFont(fontMedium);
+    }
+    if (fontSmall && fontSmall != fontDefault) {
+        TTF_CloseFont(fontSmall);
+    }
+    if (fontDefault) {
+        TTF_CloseFont(fontDefault);
+    }
 
     IMG_Quit();
     TTF_Quit();
 }
-
 
 void Game::run() {
     while (running) {
@@ -747,7 +757,7 @@ void Game::render() {
                 windowHeight / 2,
                 white,
                 scale,
-                countdownFont ? countdownFont : font
+                fontLarge ? fontLarge : fontDefault
             );
         }
     }
@@ -889,10 +899,8 @@ void Game::renderNextPieces() {
                    cornerRadius - 1, {20, 25, 51, 255}, 255, true);
 
     SDL_Color titleColor = {20, 25, 51, 255};
-    TTF_Font* titleFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 24);
-    if (!titleFont) titleFont = font;
     
-    SDL_Surface* textSurface = TTF_RenderText_Blended(titleFont, "NEXT", titleColor);
+    SDL_Surface* textSurface = TTF_RenderText_Blended(fontMedium, "NEXT", titleColor);
     if (textSurface) {
         SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
         if (textTexture) {
@@ -903,9 +911,6 @@ void Game::renderNextPieces() {
             SDL_DestroyTexture(textTexture);
         }
         SDL_FreeSurface(textSurface);
-    }
-    if (titleFont != font) {
-        TTF_CloseFont(titleFont);
     }
 
     bool showNextPieces = (!resumeCountdownActive && !isPaused && currentScreen != Screen::Settings && !isGameOver());
@@ -1016,7 +1021,7 @@ void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
 
 
 void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
-    if (!font) {
+    if (!fontDefault) {
         std::cerr << "Font not initialized!" << std::endl;
         return;
     }
@@ -1026,7 +1031,7 @@ void Game::renderText(const std::string& text, int x, int y, SDL_Color color) {
         return;
     }
 
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), color);
+    SDL_Surface* textSurface = TTF_RenderText_Blended(fontDefault, text.c_str(), color);
     if (!textSurface || textSurface->w == 0) {
         std::cerr << "Text rendering failed: " << TTF_GetError() << std::endl;
         return;
@@ -1090,10 +1095,7 @@ void Game::renderHoldPiece() {
                    cornerRadius - 1, {20, 25, 51, 255}, 255, true);
 
     SDL_Color titleColor = {20, 25, 51, 255};
-    TTF_Font* titleFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 24);
-    if (!titleFont) titleFont = font;
-    
-    SDL_Surface* textSurface = TTF_RenderText_Blended(titleFont, "HOLD", titleColor);
+    SDL_Surface* textSurface = TTF_RenderText_Blended(fontMedium, "HOLD", titleColor);
     if (textSurface) {
         SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
         if (textTexture) {
@@ -1104,9 +1106,6 @@ void Game::renderHoldPiece() {
             SDL_DestroyTexture(textTexture);
         }
         SDL_FreeSurface(textSurface);
-    }
-    if (titleFont != font) {
-        TTF_CloseFont(titleFont);
     }
 
     bool showHeldPiece = (!resumeCountdownActive && !isPaused && currentScreen != Screen::Settings && !isGameOver());
@@ -1319,7 +1318,7 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
 
     drawRoundedRect(renderer, x, y, width, height, radius, 
                    {255, 255, 255, 255}, 255, true);
-    
+
     SDL_Rect innerRect = {
         x + margin,
         y + margin + titleAreaHeight,
@@ -1330,10 +1329,7 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
                    radius - 2, {20, 25, 51, 255}, 255, true);
 
     SDL_Color titleColor = {20, 25, 51, 255};
-    TTF_Font* titleFont = TTF_OpenFont("fonts/DejaVuSans-Bold.ttf", 20);
-    if (!titleFont) titleFont = font;
-    
-    SDL_Surface* titleSurface = TTF_RenderText_Blended(titleFont, title.c_str(), titleColor);
+    SDL_Surface* titleSurface = TTF_RenderText_Blended(fontMedium, title.c_str(), titleColor);
     if (titleSurface) {
         SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(renderer, titleSurface);
         if (titleTexture) {
@@ -1345,12 +1341,9 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
         }
         SDL_FreeSurface(titleSurface);
     }
-    
+
     SDL_Color valueColor = {255, 255, 255, 255};
-    TTF_Font* valueFont = TTF_OpenFont("fonts/DejaVuSans.ttf", 24);
-    if (!valueFont) valueFont = font;
-    
-    SDL_Surface* valueSurface = TTF_RenderText_Blended(valueFont, value.c_str(), valueColor);
+    SDL_Surface* valueSurface = TTF_RenderText_Blended(fontDefault, value.c_str(), valueColor);
     if (valueSurface) {
         SDL_Texture* valueTexture = SDL_CreateTextureFromSurface(renderer, valueSurface);
         if (valueTexture) {
@@ -1362,10 +1355,8 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
         }
         SDL_FreeSurface(valueSurface);
     }
-    
-    if (titleFont != font) TTF_CloseFont(titleFont);
-    if (valueFont != font) TTF_CloseFont(valueFont);
 }
+
 
 int Game::countContactSegments(const Shape& shape, const Board& board) {
     const auto& coords = shape.getCoords();
