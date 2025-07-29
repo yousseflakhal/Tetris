@@ -212,7 +212,7 @@ std::vector<std::pair<int, int>> Shape::getLocalCoords() const {
 
 void Shape::rotateCounterClockwise(const std::vector<std::vector<int>>& grid, int cols, int rows) {
     auto newCoords = coords;
-    auto pivot = coords[1];
+    auto pivot = coords[0];
 
     for (auto& p : newCoords) {
         int x = p.first - pivot.first;
