@@ -324,6 +324,16 @@ void Game::processInput() {
     }
     inputHandler.beginFrame();
 
+    if (board.isClearingLines) {
+        SDL_Event e;
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                running = false;
+            }
+        }
+        return;
+    }
+
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         inputHandler.handleEvent(e);
@@ -553,13 +563,24 @@ void Game::processInput() {
             currentShape.moveDown();
             dropDistance++;
         }
+
         board.placeShape(currentShape);
         if (soundEnabled) SoundManager::PlayDropSound();
+
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
-        spawnNewShape();
+
+        Uint32 now = SDL_GetTicks();
+        if (clearedLines > 0) {
+            board.clearStartTime = now;
+        } else {
+            spawnNewShape();
+            if (isGameOver()) return;
+        }
+
         inputHandler.clearKeyState(SDLK_SPACE);
     }
+
 
     if (currentScreen == Screen::Settings) {
         if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
@@ -574,17 +595,28 @@ void Game::processInput() {
             ignoreNextMouseClick = false;
             return;
         }
+
         int dropDistance = 0;
         while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
             currentShape.moveDown();
             dropDistance++;
         }
+
         board.placeShape(currentShape);
         if (soundEnabled) SoundManager::PlayDropSound();
+
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
-        spawnNewShape();
+
+        Uint32 now = SDL_GetTicks();
+        if (clearedLines > 0) {
+            board.clearStartTime = now;
+        } else {
+            spawnNewShape();
+            if (isGameOver()) return;
+        }
     }
+
 
     if (inputHandler.isKeyJustPressed(keyBindings[Action::Hold])) {
         holdPiece();
@@ -636,7 +668,10 @@ void Game::update() {
     if (board.isClearingLines) {
         if (currentTime - board.clearStartTime >= 500) {
             board.finalizeLineClear();
+            spawnNewShape();
+            if (isGameOver()) return;
         }
+        return;
     }
 
     if (currentTime - lastMoveTime >= static_cast<Uint32>(speed)) {
@@ -646,17 +681,15 @@ void Game::update() {
         } else {
             board.placeShape(currentShape);
             if (soundEnabled) SoundManager::PlayDropSound();
+
             int clearedLines = board.clearFullLines();
             updateScore(clearedLines, 0, false);
 
             if (clearedLines > 0) {
                 board.clearStartTime = currentTime;
-            }
-
-            spawnNewShape();
-
-            if (isGameOver()) {
-                return;
+            } else {
+                spawnNewShape();
+                if (isGameOver()) return;
             }
         }
         lastMoveTime = currentTime;
@@ -681,7 +714,7 @@ void Game::render() {
     } else {
         board.updateLandingAnimations();
         board.draw(renderer, 200, 10, !resumeCountdownActive);
-        if (!resumeCountdownActive && !isGameOver()) {
+        if (!resumeCountdownActive && !isGameOver() && !board.isClearingLines) {
             shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
             currentShape.draw(renderer, board.getCellSize(), 200, 10);
         }
@@ -781,6 +814,7 @@ void Game::render() {
 
 
 bool Game::isGameOver() const {
+    if (board.isClearingLines) return false;
     return board.isOccupied(currentShape.getCoords(), 0, 0);
 }
 
