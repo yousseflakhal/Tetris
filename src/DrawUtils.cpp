@@ -126,3 +126,77 @@ void drawCardWithBorder(SDL_Renderer* renderer,
         true
     );
 }
+
+void draw_smooth_rounded_rect(SDL_Renderer* renderer,
+                              int x, int y, int w, int h,
+                              int radius, SDL_Color color,
+                              bool filled, int borderThickness) 
+{
+    // Set blend mode for anti-aliasing
+    SDL_BlendMode original_mode;
+    SDL_GetRenderDrawBlendMode(renderer, &original_mode);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    if (filled) {
+        SDL_Rect center = {x + radius, y, w - 2 * radius, h};
+        SDL_RenderFillRect(renderer, &center);
+
+        SDL_Rect sides = {x, y + radius, w, h - 2 * radius};
+        SDL_RenderFillRect(renderer, &sides);
+    }
+
+    const int centers[4][2] = {
+        {x + radius, y + radius},
+        {x + w - radius, y + radius},
+        {x + radius, y + h - radius},
+        {x + w - radius, y + h - radius}
+    };
+
+    for (int corner = 0; corner < 4; corner++) {
+        int cx = centers[corner][0];
+        int cy = centers[corner][1];
+
+        int start_x = (corner % 2 == 0) ? x : x + w - radius;
+        int end_x   = (corner % 2 == 0) ? x + radius : x + w;
+
+        int start_y = (corner < 2) ? y : y + h - radius;
+        int end_y   = (corner < 2) ? y + radius : y + h;
+
+        for (int py = start_y; py < end_y; py++) {
+            for (int px = start_x; px < end_x; px++) {
+                float dx = px - cx + 0.5f;
+                float dy = py - cy + 0.5f;
+                float distance = sqrtf(dx * dx + dy * dy);
+
+                if (filled) {
+                    if (distance <= radius - 0.5f) {
+                        SDL_RenderDrawPoint(renderer, px, py);
+                    } else if (distance < radius + 0.5f) {
+                        Uint8 alpha = (Uint8)(color.a * (1.0f - (distance - (radius - 0.5f))));
+                        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, alpha);
+                        SDL_RenderDrawPoint(renderer, px, py);
+                        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+                    }
+                } else {
+                    if (distance >= radius - borderThickness && distance <= radius + 0.5f) {
+                        SDL_RenderDrawPoint(renderer, px, py);
+                    }
+                }
+            }
+        }
+    }
+
+    if (!filled) {
+        for (int i = 0; i < borderThickness; i++) {
+            SDL_RenderDrawLine(renderer, x + radius, y + i, x + w - radius - 1, y + i);
+            SDL_RenderDrawLine(renderer, x + radius, y + h - 1 - i, x + w - radius - 1, y + h - 1 - i);
+
+            SDL_RenderDrawLine(renderer, x + i, y + radius, x + i, y + h - radius - 1);
+            SDL_RenderDrawLine(renderer, x + w - 1 - i, y + radius, x + w - 1 - i, y + h - radius - 1);
+        }
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, original_mode);
+}

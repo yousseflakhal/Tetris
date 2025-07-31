@@ -920,8 +920,8 @@ void Game::renderNextPieces() {
     const int margin = 5;
     const int titleAreaHeight = 40;
     
-    drawRoundedRect(renderer, sidebarX, sidebarY, sidebarWidth, sidebarHeight, 
-                   cornerRadius, {255, 255, 255, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, sidebarX, sidebarY, sidebarWidth, sidebarHeight, 
+                   cornerRadius, {255, 255, 255, 255}, true);
     
     SDL_Rect innerRect = {
         sidebarX + margin,
@@ -929,8 +929,8 @@ void Game::renderNextPieces() {
         sidebarWidth - 2 * margin,
         sidebarHeight - 2 * margin - titleAreaHeight
     };
-    drawRoundedRect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
-                   cornerRadius - 1, {20, 25, 51, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
+                   cornerRadius - 1, {20, 25, 51, 255}, true);
 
     SDL_Color titleColor = {20, 25, 51, 255};
     
@@ -982,13 +982,11 @@ void Game::renderNextPieces() {
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
-            drawRoundedRect(renderer, 
+            draw_smooth_rounded_rect(renderer, 
                            x, y,
                            previewCellDrawSize, previewCellDrawSize,
                            radius,
-                           color,
-                           color.a,
-                           true);
+                           color, true);
         }
     }
 }
@@ -1116,8 +1114,8 @@ void Game::renderHoldPiece() {
     const int margin = 5;
     const int titleAreaHeight = 40;
 
-    drawRoundedRect(renderer, holdBoxX, holdBoxY, holdBoxWidth, holdBoxHeight, 
-                   cornerRadius, {255, 255, 255, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, holdBoxX, holdBoxY, holdBoxWidth, holdBoxHeight, 
+                   cornerRadius, {255, 255, 255, 255}, true);
     
     SDL_Rect innerRect = {
         holdBoxX + margin,
@@ -1125,8 +1123,8 @@ void Game::renderHoldPiece() {
         holdBoxWidth - 2 * margin,
         holdBoxHeight - 2 * margin - titleAreaHeight
     };
-    drawRoundedRect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
-                   cornerRadius - 1, {20, 25, 51, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
+                   cornerRadius - 1, {20, 25, 51, 255}, true);
 
     SDL_Color titleColor = {20, 25, 51, 255};
     SDL_Surface* textSurface = TTF_RenderText_Blended(fontMedium, "HOLD", titleColor);
@@ -1171,13 +1169,11 @@ void Game::renderHoldPiece() {
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
-            drawRoundedRect(renderer, 
+            draw_smooth_rounded_rect(renderer, 
                            x, y,
                            previewCellDrawSize, previewCellDrawSize,
                            radius,
-                           color,
-                           color.a,
-                           true);
+                           color, true);
         }
     }
 }
@@ -1190,7 +1186,7 @@ void Game::renderGameOverScreen() {
     const int cardY = (windowHeight - cardHeight) / 2;
     const int cornerRadius = 18;
 
-    drawRoundedRect(renderer, cardX, cardY, cardWidth, cardHeight, cornerRadius, {20, 25, 51, 240}, 240);
+    draw_smooth_rounded_rect(renderer, cardX, cardY, cardWidth, cardHeight, cornerRadius, {20, 25, 51, 240}, true);
 
     SDL_Color textColor = {255, 255, 255, 255};
     renderText("GAME OVER", cardX + 90, cardY + 40, textColor);
@@ -1350,8 +1346,8 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
     const int margin = 5;
     const int titleAreaHeight = 30;
 
-    drawRoundedRect(renderer, x, y, width, height, radius, 
-                   {255, 255, 255, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, x, y, width, height, radius, 
+                   {255, 255, 255, 255}, true);
 
     SDL_Rect innerRect = {
         x + margin,
@@ -1359,8 +1355,8 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
         width - 2 * margin,
         height - 2 * margin - titleAreaHeight
     };
-    drawRoundedRect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
-                   radius - 2, {20, 25, 51, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, innerRect.x, innerRect.y, innerRect.w, innerRect.h, 
+                   radius - 2, {20, 25, 51, 255}, true);
 
     SDL_Color titleColor = {20, 25, 51, 255};
     SDL_Surface* titleSurface = TTF_RenderText_Blended(fontMedium, title.c_str(), titleColor);

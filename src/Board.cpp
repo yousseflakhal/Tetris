@@ -28,7 +28,7 @@ void Board::initializeTexture(SDL_Renderer* renderer) {
     SDL_SetRenderTarget(renderer, whiteCellTexture);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
-    drawRoundedRect(renderer, 0, 0, cellSize - 2, cellSize - 2, 2, {255, 255, 255, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, 0, 0, cellSize - 2, cellSize - 2, 2, {255, 255, 255, 255}, true);
     SDL_SetRenderTarget(renderer, nullptr);
 }
 
@@ -102,7 +102,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
 
     std::unordered_set<int> clearLinesSet(linesToClear.begin(), linesToClear.end());
 
-    drawRoundedRect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, 255, true);
+    draw_smooth_rounded_rect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, true);
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
@@ -115,8 +115,8 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
             bool isFullCell = grid[y][x] != 0;
             bool isLineClearing = isClearingLines && clearLinesSet.count(y) > 0;
 
-            drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
-                            2, {0, 0, 0, 255}, 255, true);
+            draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
+                            2, {0, 0, 0, 255}, true);
 
             if (showPlacedBlocks && isFullCell) {
                 SDL_Color color = colorGrid[y][x];
@@ -140,7 +140,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                         SDL_SetRenderTarget(renderer, tempTexture);
                         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
                         SDL_RenderClear(renderer);
-                        drawRoundedRect(renderer, 0, 0, cellDrawSize, cellDrawSize, 2, color, alpha, true);
+                        draw_smooth_rounded_rect(renderer, 0, 0, cellDrawSize, cellDrawSize, 2, color, true);
                         SDL_SetRenderTarget(renderer, nullptr);
 
                         SDL_RenderCopyEx(renderer, tempTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
@@ -154,8 +154,8 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                     Uint32 now = SDL_GetTicks();
                     Uint8 alpha = landingAlpha(x, y, now);
 
-                    drawRoundedRect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
-                                    2, color, alpha, true);
+                    draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
+                                    2, color, true);
                 }
             }
         }

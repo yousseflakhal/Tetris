@@ -143,19 +143,13 @@ void Shape::draw(SDL_Renderer* renderer, int cellSize, int offsetX, int offsetY,
         for (const auto& coord : coords) {
             int x = offsetX + coord.first * cellSize + gap;
             int y = offsetY + coord.second * cellSize + gap;
-            drawRoundedRect(renderer, x, y, cellDrawSize, cellDrawSize, radius, drawColor, drawColor.a, false);
+            draw_smooth_rounded_rect(renderer, x, y, cellDrawSize, cellDrawSize, radius, drawColor, false, 2);
         }
     } else {
         for (const auto& coord : coords) {
             int x = offsetX + coord.first * cellSize + gap;
             int y = offsetY + coord.second * cellSize + gap;
-            drawRoundedRect(renderer, x, y, cellDrawSize, cellDrawSize, radius, drawColor, drawColor.a, true);
-        }
-        SDL_Color borderColor = {0, 0, 0, 180};
-        for (const auto& coord : coords) {
-            int x = offsetX + coord.first * cellSize + gap;
-            int y = offsetY + coord.second * cellSize + gap;
-            drawRoundedRect(renderer, x, y, cellDrawSize, cellDrawSize, radius, borderColor, borderColor.a, false);
+            draw_smooth_rounded_rect(renderer, x, y, cellDrawSize, cellDrawSize, radius , drawColor, true);
         }
     }
 }
