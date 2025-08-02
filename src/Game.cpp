@@ -953,10 +953,11 @@ void Game::renderNextPieces() {
     int previewCellSize = cellSize * 0.75;
     int spacing = 20;
     int slotHeight = 80;
+    std::vector<std::pair<int,int>> localCoords;
 
     for (size_t i = 0; i < std::min(nextPieces.size(), size_t(3)); i++) {
         const auto& shape = nextPieces[i];
-        auto localCoords = shape.getLocalCoords();
+        shape.getLocalCoords(localCoords);
         SDL_Color color = shape.getColor();
 
         int minX = 0, maxX = 0;
@@ -977,7 +978,6 @@ void Game::renderNextPieces() {
 
         const int gap = 1;
         const int previewCellDrawSize = previewCellSize - 2 * gap;
-        const int radius = 1;
 
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
@@ -988,6 +988,7 @@ void Game::renderNextPieces() {
         }
     }
 }
+
 
 
 void Game::spawnNewShape() {
@@ -1140,7 +1141,8 @@ void Game::renderHoldPiece() {
 
     bool showHeldPiece = (!resumeCountdownActive && !isPaused && currentScreen != Screen::Settings && !isGameOver());
     if (showHeldPiece && heldShape.has_value()) {
-        auto localCoords = heldShape->getLocalCoords();
+        std::vector<std::pair<int,int>> localCoords;
+        heldShape->getLocalCoords(localCoords);
         SDL_Color color = heldShape->getColor();
 
         int minX = 0, maxX = 0;
@@ -1162,7 +1164,6 @@ void Game::renderHoldPiece() {
 
         const int gap = 1;
         const int previewCellDrawSize = previewCellSize - 2 * gap;
-        const int radius = 1;
 
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
@@ -1173,6 +1174,7 @@ void Game::renderHoldPiece() {
         }
     }
 }
+
 
 
 void Game::renderGameOverScreen() {
