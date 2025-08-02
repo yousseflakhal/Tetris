@@ -15,58 +15,6 @@ void drawAACircle(SDL_Renderer* renderer, int cx, int cy, int radius) {
     }
 }
 
-void drawRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h, 
-                     int radius, SDL_Color color, Uint8 alpha, bool filled) {
-    if (w <= 0 || h <= 0) return;
-
-    Uint8 orig_r, orig_g, orig_b, orig_a;
-    SDL_GetRenderDrawColor(renderer, &orig_r, &orig_g, &orig_b, &orig_a);
-
-    radius = std::min(radius, std::min(w, h) / 2);
-
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, alpha);
-
-    if (filled) {
-        if (w > 2 * radius && h > 2 * radius) {
-            SDL_Rect center_rect = {x + radius, y + radius, w - 2 * radius, h - 2 * radius};
-            SDL_RenderFillRect(renderer, &center_rect);
-        }
-
-        if (w > 2 * radius) {
-            SDL_Rect top_rect = {x + radius, y, w - 2 * radius, radius};
-            SDL_Rect bottom_rect = {x + radius, y + h - radius, w - 2 * radius, radius};
-            SDL_RenderFillRect(renderer, &top_rect);
-            SDL_RenderFillRect(renderer, &bottom_rect);
-        }
-
-        if (h > 2 * radius) {
-            SDL_Rect left_rect = {x, y + radius, radius, h - 2 * radius};
-            SDL_Rect right_rect = {x + w - radius, y + radius, radius, h - 2 * radius};
-            SDL_RenderFillRect(renderer, &left_rect);
-            SDL_RenderFillRect(renderer, &right_rect);
-        }
-    }
-
-    if (radius > 0) {
-        drawAACircle(renderer, x + radius, y + radius, radius);
-        drawAACircle(renderer, x + w - radius - 1, y + radius, radius);
-        drawAACircle(renderer, x + radius, y + h - radius - 1, radius);
-        drawAACircle(renderer, x + w - radius - 1, y + h - radius - 1, radius);
-    }
-
-    if (w > 2 * radius) {
-        SDL_RenderDrawLine(renderer, x + radius, y, x + w - radius, y);
-        SDL_RenderDrawLine(renderer, x + radius, y + h - 1, x + w - radius, y + h - 1);
-    }
-
-    if (h > 2 * radius) {
-        SDL_RenderDrawLine(renderer, x, y + radius, x, y + h - radius);
-        SDL_RenderDrawLine(renderer, x + w - 1, y + radius, x + w - 1, y + h - radius);
-    }
-
-    SDL_SetRenderDrawColor(renderer, orig_r, orig_g, orig_b, orig_a);
-}
-
 void drawUIMenuRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h,
                            int radius, SDL_Color color, Uint8 alpha) {
     if (w <= 0 || h <= 0) return;
@@ -104,25 +52,24 @@ void drawCardWithBorder(SDL_Renderer* renderer,
                         SDL_Color borderColor,
                         int borderThickness = 2)
 {
-    for (int i = 0; i < borderThickness; ++i) {
-        drawRoundedRect(
-            renderer,
-            x + i, y + i,
-            w - 2 * i, h - 2 * i,
-            std::max(0, radius - i),
-            borderColor,
-            borderColor.a,
-            false
-        );
-    }
-
-    drawRoundedRect(
+    draw_smooth_rounded_rect(
         renderer,
-        x + borderThickness, y + borderThickness,
-        w - 2 * borderThickness, h - 2 * borderThickness,
+        x, y,
+        w, h,
+        radius,
+        borderColor,
+        false,
+        borderThickness
+    );
+
+    draw_smooth_rounded_rect(
+        renderer,
+        x + borderThickness,
+        y + borderThickness,
+        w - 2 * borderThickness,
+        h - 2 * borderThickness,
         std::max(0, radius - borderThickness),
         bgColor,
-        bgColor.a,
         true
     );
 }
