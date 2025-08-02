@@ -17,18 +17,40 @@ Board::~Board() {
 }
 
 void Board::initializeTexture(SDL_Renderer* renderer) {
-    if (whiteCellTexture) SDL_DestroyTexture(whiteCellTexture);
+    if (whiteCellTexture) {
+        SDL_DestroyTexture(whiteCellTexture);
+        whiteCellTexture = nullptr;
+    }
 
     whiteCellTexture = SDL_CreateTexture(renderer,
                                          SDL_PIXELFORMAT_RGBA8888,
                                          SDL_TEXTUREACCESS_TARGET,
                                          cellSize - 2, cellSize - 2);
-    SDL_SetTextureBlendMode(whiteCellTexture, SDL_BLENDMODE_BLEND);
 
-    SDL_SetRenderTarget(renderer, whiteCellTexture);
+    if (!whiteCellTexture) {
+        SDL_Log("Failed to create whiteCellTexture: %s", SDL_GetError());
+        return;
+    }
+
+    if (SDL_SetTextureBlendMode(whiteCellTexture, SDL_BLENDMODE_BLEND) != 0) {
+        SDL_Log("Failed to set blend mode for whiteCellTexture: %s", SDL_GetError());
+        SDL_DestroyTexture(whiteCellTexture);
+        whiteCellTexture = nullptr;
+        return;
+    }
+
+    if (SDL_SetRenderTarget(renderer, whiteCellTexture) != 0) {
+        SDL_Log("Failed to set render target: %s", SDL_GetError());
+        SDL_DestroyTexture(whiteCellTexture);
+        whiteCellTexture = nullptr;
+        return;
+    }
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
-    draw_smooth_rounded_rect(renderer, 0, 0, cellSize - 2, cellSize - 2, 2, {255, 255, 255, 255}, true);
+    draw_smooth_rounded_rect(renderer, 0, 0, cellSize - 2, cellSize - 2, 2,
+                             {255, 255, 255, 255}, true);
+
     SDL_SetRenderTarget(renderer, nullptr);
 }
 
