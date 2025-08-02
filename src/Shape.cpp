@@ -132,24 +132,39 @@ bool Shape::isValidPosition(const std::vector<std::vector<int>>& board, int boar
 
 void Shape::draw(SDL_Renderer* renderer, int cellSize, int offsetX, int offsetY, bool isShadow) const {
     const int gap = 1;
-    const int cellDrawSize = cellSize - 2 * gap;
-    const int radius = 2;
+    const int margin = 1;
+    const int borderThickness = 2;
+    const int radius = 6;
 
-    SDL_Color drawColor = color;
-    Uint8 alpha = 255;
+    SDL_Color mainColor = color;
+    SDL_Color borderColor = darker(color, 0.55f);
 
-    if (isShadow) {
-        drawColor.a = 80;
-        for (const auto& coord : coords) {
-            int x = offsetX + coord.first * cellSize + gap;
-            int y = offsetY + coord.second * cellSize + gap;
-            draw_smooth_rounded_rect(renderer, x, y, cellDrawSize, cellDrawSize, radius, drawColor, false, 2);
-        }
-    } else {
-        for (const auto& coord : coords) {
-            int x = offsetX + coord.first * cellSize + gap;
-            int y = offsetY + coord.second * cellSize + gap;
-            draw_smooth_rounded_rect(renderer, x, y, cellDrawSize, cellDrawSize, radius , drawColor, true);
+    for (const auto& coord : coords) {
+        int x = offsetX + coord.first * cellSize + gap;
+        int y = offsetY + coord.second * cellSize + gap;
+        int w = cellSize - 2 * gap;
+        int h = cellSize - 2 * gap;
+
+        if (isShadow) {
+            SDL_Color shadowColor = mainColor;
+            draw_smooth_rounded_rect(
+                renderer,
+                x, y, w, h,
+                radius,
+                shadowColor,
+                false,
+                3
+            );
+        } else {
+            draw_tetris_cell(
+                renderer, x, y, w, h,
+                radius, margin, borderThickness,
+                mainColor, borderColor
+            );
+            draw_smooth_parabolic_highlight_arc(
+                renderer, x, y, w, h,
+                margin, borderThickness
+            );
         }
     }
 }

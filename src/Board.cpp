@@ -153,9 +153,22 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                 } else {
                     Uint32 now = SDL_GetTicks();
                     Uint8 alpha = landingAlpha(x, y, now);
+                    SDL_Color borderColor = darker(color, 0.55f);
 
-                    draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
-                                    2, color, true);
+                    draw_tetris_cell(
+                        renderer,
+                        cellX, cellY, cellDrawSize, cellDrawSize,
+                        6,
+                        1,
+                        2,
+                        color,
+                        borderColor
+                    );
+                    draw_smooth_parabolic_highlight_arc(
+                        renderer,
+                        cellX, cellY, cellDrawSize, cellDrawSize,
+                        1, 2
+                    );
                 }
             }
         }

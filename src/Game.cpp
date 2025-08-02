@@ -982,11 +982,9 @@ void Game::renderNextPieces() {
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
-            draw_smooth_rounded_rect(renderer, 
-                           x, y,
-                           previewCellDrawSize, previewCellDrawSize,
-                           radius,
-                           color, true);
+            draw_preview_block(renderer, x, y,
+                       previewCellDrawSize, previewCellDrawSize,
+                       color);
         }
     }
 }
@@ -1169,11 +1167,9 @@ void Game::renderHoldPiece() {
         for (const auto& coord : localCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
-            draw_smooth_rounded_rect(renderer, 
-                           x, y,
-                           previewCellDrawSize, previewCellDrawSize,
-                           radius,
-                           color, true);
+            draw_preview_block(renderer, x, y,
+                       previewCellDrawSize, previewCellDrawSize,
+                       color);
         }
     }
 }
