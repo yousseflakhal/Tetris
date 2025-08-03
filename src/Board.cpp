@@ -173,8 +173,6 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                         SDL_RenderCopyEx(renderer, whiteCellTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
                     }
                 } else {
-                    Uint32 now = SDL_GetTicks();
-                    Uint8 alpha = landingAlpha(x, y, now);
                     SDL_Color borderColor = darker(color, 0.55f);
 
                     draw_tetris_cell(

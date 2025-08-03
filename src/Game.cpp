@@ -2,37 +2,11 @@
 
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
-    currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
-    canHold(true),
-    shadowShape(currentShape),
-    inputHandler(),
-    running(true),
-    lastMoveTime(SDL_GetTicks()),
-    speed(800),
-    cellSize(cellSize),
-    lastHorizontalMoveTime(0),
-    lastDownMoveTime(0),
-    lastRotationTime(0),
-    horizontalMoveDelay(50),
-    downMoveDelay(100),
-    rotationDelay(100),
-    windowWidth(windowWidth),
-    windowHeight(windowHeight),
-    nextPieces(),
-    level(1),
-    totalLinesCleared(0),
-    score(0),
-    heldShape(std::nullopt),
-    ignoreNextMouseClick(false),
-    isPaused(false),
-    resumeCountdownActive(false),
-    currentScreen(Screen::Main),
-    isMusicPlaying(false),
-    gameOverMusicPlayed(false),
-    soundEnabled(false),
-    lastSoundEnabled(false),
-    startGameTimerAfterCountdown(true),
-    mouseControlEnabled(true)
+      currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
+      shadowShape(currentShape),
+      cellSize(cellSize),
+      windowWidth(windowWidth),
+      windowHeight(windowHeight)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL Initialization failed");

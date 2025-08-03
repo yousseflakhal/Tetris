@@ -358,7 +358,6 @@ void draw_smooth_parabolic_highlight_arc(SDL_Renderer* renderer,
         
         for (int px = leftBound; px <= rightBound; px++) {
             float dx = static_cast<float>(px) + 0.5f - arcCenterX;
-            float idealX = halfWidth * ((dx > 0) ? 1.0f : -1.0f);
             float horizontalDist = std::abs(dx) - halfWidth;
             float dist = std::max(0.0f, horizontalDist);
             

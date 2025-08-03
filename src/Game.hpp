@@ -82,7 +82,7 @@ private:
     Board      board;
     Shape      currentShape;
     Shape      shadowShape;
-    std::optional<Shape> heldShape;
+    std::optional<Shape> heldShape = std::nullopt;
     std::deque<Shape>    nextPieces;
     bool       canHold = true;
 
@@ -98,9 +98,9 @@ private:
     Uint32 lastHorizontalMoveTime = 0;
     Uint32 lastDownMoveTime = 0;
     Uint32 lastRotationTime = 0;
-    const Uint32 horizontalMoveDelay = 50;
-    const Uint32 downMoveDelay = 100;
-    const Uint32 rotationDelay = 100;
+    static constexpr Uint32 horizontalMoveDelay = 50;
+    static constexpr Uint32 downMoveDelay = 100;
+    static constexpr Uint32 rotationDelay = 100;
     Uint32 gameStartTime = 0;
     Uint32 totalPausedTime = 0;
     Uint32 pauseStartTime = 0;
@@ -119,8 +119,27 @@ private:
     Screen currentScreen = Screen::Main;
 
     InputHandler inputHandler;
-    std::unordered_map<Action, SDL_Keycode> keyBindings;
-    std::vector<std::pair<std::string, Action>> controlMappings;
+
+    std::unordered_map<Action, SDL_Keycode> keyBindings = {
+        {Action::MoveRight, SDLK_RIGHT},
+        {Action::MoveLeft, SDLK_LEFT},
+        {Action::RotateRight, SDLK_UP},
+        {Action::RotateLeft, SDLK_z},
+        {Action::SoftDrop, SDLK_DOWN},
+        {Action::HardDrop, SDLK_SPACE},
+        {Action::Hold, SDLK_c}
+    };
+
+    std::vector<std::pair<std::string, Action>> controlMappings = {
+        {"MOVE RIGHT", Action::MoveRight},
+        {"MOVE LEFT", Action::MoveLeft},
+        {"ROTATE RIGHT", Action::RotateRight},
+        {"ROTATE LEFT", Action::RotateLeft},
+        {"SOFT DROP", Action::SoftDrop},
+        {"HARD DROP", Action::HardDrop},
+        {"HOLD", Action::Hold}
+    };
+
     std::vector<std::shared_ptr<UILabel>> controlLabels;
     std::vector<std::shared_ptr<UIButton>> controlButtons;
     bool   waitingForKey = false;
