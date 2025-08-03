@@ -142,6 +142,7 @@ private:
 
     std::vector<std::shared_ptr<UILabel>> controlLabels;
     std::vector<std::shared_ptr<UIButton>> controlButtons;
+    mutable std::vector<std::pair<int, int>> tmpCoords;
     bool   waitingForKey = false;
     Action actionToRebind = Action::MoveRight;
 

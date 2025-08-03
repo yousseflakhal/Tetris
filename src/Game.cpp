@@ -927,16 +927,16 @@ void Game::renderNextPieces() {
     int previewCellSize = cellSize * 0.75;
     int spacing = 20;
     int slotHeight = 80;
-    std::vector<std::pair<int,int>> localCoords;
 
     for (size_t i = 0; i < std::min(nextPieces.size(), size_t(3)); i++) {
         const auto& shape = nextPieces[i];
-        shape.getLocalCoords(localCoords);
+        tmpCoords.clear();
+        shape.getLocalCoords(tmpCoords);
         SDL_Color color = shape.getColor();
 
         int minX = 0, maxX = 0;
         int minY = 0, maxY = 0;
-        for (const auto& coord : localCoords) {
+        for (const auto& coord : tmpCoords) {
             minX = std::min(minX, coord.first);
             maxX = std::max(maxX, coord.first);
             minY = std::min(minY, coord.second);
@@ -953,7 +953,7 @@ void Game::renderNextPieces() {
         const int gap = 1;
         const int previewCellDrawSize = previewCellSize - 2 * gap;
 
-        for (const auto& coord : localCoords) {
+        for (const auto& coord : tmpCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
             draw_preview_block(renderer, x, y,
@@ -1115,13 +1115,13 @@ void Game::renderHoldPiece() {
 
     bool showHeldPiece = (!resumeCountdownActive && !isPaused && currentScreen != Screen::Settings && !isGameOver());
     if (showHeldPiece && heldShape.has_value()) {
-        std::vector<std::pair<int,int>> localCoords;
-        heldShape->getLocalCoords(localCoords);
+        tmpCoords.clear();
+        heldShape->getLocalCoords(tmpCoords);
         SDL_Color color = heldShape->getColor();
 
         int minX = 0, maxX = 0;
         int minY = 0, maxY = 0;
-        for (const auto& coord : localCoords) {
+        for (const auto& coord : tmpCoords) {
             minX = std::min(minX, coord.first);
             maxX = std::max(maxX, coord.first);
             minY = std::min(minY, coord.second);
@@ -1139,7 +1139,7 @@ void Game::renderHoldPiece() {
         const int gap = 1;
         const int previewCellDrawSize = previewCellSize - 2 * gap;
 
-        for (const auto& coord : localCoords) {
+        for (const auto& coord : tmpCoords) {
             int x = drawX + (coord.first - minX) * previewCellSize + gap;
             int y = drawY + (coord.second - minY) * previewCellSize + gap;
             draw_preview_block(renderer, x, y,
