@@ -28,10 +28,11 @@ public:
     void setPosition(int x, int y);
     void getLocalCoords(std::vector<std::pair<int,int>>& out) const;
 
+    int rotationState;
+
 private:
     Type type;
     SDL_Color color;
-    int rotationState;
 
     void rotateShape(int direction);
     bool isValidPosition(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight) const;

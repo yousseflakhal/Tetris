@@ -312,16 +312,16 @@ void Game::processInput() {
     while (SDL_PollEvent(&e)) {
         inputHandler.handleEvent(e);
         FormUI::HandleEvent(e);
-    
+
         if (inputHandler.isQuitRequested()) {
             running = false;
             return;
         }
-    
+
         if (currentScreen == Screen::Settings && e.type == SDL_KEYDOWN && !e.key.repeat) {
             if (waitingForKey) {
                 SDL_Keycode newKey = e.key.keysym.sym;
-            
+
                 if (newKey == SDLK_ESCAPE) {
                     waitingForKey = false;
                     for (size_t i = 0; i < controlButtons.size(); ++i) {
@@ -331,7 +331,7 @@ void Game::processInput() {
                     }
                     return;
                 }
-            
+
                 bool keyAlreadyUsed = false;
                 for (const auto& [action, boundKey] : keyBindings) {
                     if (boundKey == newKey && action != actionToRebind) {
@@ -339,7 +339,7 @@ void Game::processInput() {
                         break;
                     }
                 }
-            
+
                 if (keyAlreadyUsed) {
                     waitingForKey = false;
                     for (size_t i = 0; i < controlButtons.size(); ++i) {
@@ -349,10 +349,10 @@ void Game::processInput() {
                     }
                     return;
                 }
-            
+
                 keyBindings[actionToRebind] = newKey;
                 waitingForKey = false;
-            
+
                 for (size_t i = 0; i < controlButtons.size(); ++i) {
                     if (controlMappings[i].second == actionToRebind) {
                         controlButtons[i]->setText(SDL_GetKeyName(newKey));
@@ -380,7 +380,7 @@ void Game::processInput() {
             totalPausedTime += SDL_GetTicks() - pauseStartTime;
             resumeCountdownActive = true;
             countdownStartTime = SDL_GetTicks();
-    
+
             if (!isMusicPlaying) {
                 if (soundEnabled) SoundManager::ResumeBackgroundMusic();
                 isMusicPlaying = true;
@@ -475,38 +475,45 @@ void Game::processInput() {
         rightKeyHandled = false;
     }
 
-    int boardOffsetX = 200;
-    int mouseX = inputHandler.getMouseX() - boardOffsetX;
-    static int prevMouseX = -1;
-    bool isMouseInsideBoard = (mouseX >= 0 && mouseX < board.getCols() * cellSize);
-    bool isMouseMoving = (mouseX != prevMouseX);
-    prevMouseX = mouseX;
+    {
+        const int boardOffsetX = 200;
+        const int boardOffsetY = 10;
+        int mouseX = inputHandler.getMouseX() - boardOffsetX;
+        int mouseY = inputHandler.getMouseY() - boardOffsetY;
 
-    if (mouseControlEnabled && isMouseInsideBoard && isMouseMoving) {
-        int targetGridX = std::round(static_cast<float>(mouseX) / cellSize);
-        if (currentShape.getType() == Shape::Type::O) {
-            targetGridX -= 1;
-        }
-        targetGridX = std::clamp(targetGridX, 0, board.getCols() - 1);
+        const bool insideBoard =
+            mouseX >= 0 && mouseX < board.getCols()*cellSize &&
+            mouseY >= 0 && mouseY < board.getRows()*cellSize;
 
-        int currentX = currentShape.getCoords()[0].first;
-        if (targetGridX > currentX) {
-            if (!board.isOccupied(currentShape.getCoords(), 1, 0)) {
-                currentShape.moveRight(board.getCols());
-                if (soundEnabled) SoundManager::PlayMoveSound();
+        if (mouseControlEnabled && insideBoard)
+        {
+            int targetGridX = mouseX / cellSize;
+            int targetGridY = mouseY / cellSize;
+
+            int anchorX = targetGridX;
+            int bonusX  = targetGridX;
+            if (currentShape.getType() == Shape::Type::O)
+            {
+                anchorX -= 1;
+                bonusX   = targetGridX;
             }
-        } else if (targetGridX < currentX) {
-            if (!board.isOccupied(currentShape.getCoords(), -1, 0)) {
-                currentShape.moveLeft();
-                if (soundEnabled) SoundManager::PlayMoveSound();
-            }
-        }
 
-        if (currentTime - lastRotationTime >= rotationDelay) {
-            autoRotateCurrentShape(targetGridX);
-            lastRotationTime = currentTime;
+            targetGridX = std::clamp(targetGridX, 0, board.getCols()-1);
+            targetGridY = std::clamp(targetGridY, 0, board.getRows()-1);
+
+            bool moved = (targetGridX != lastMouseTargetGridX) ||
+                        (targetGridY != lastMouseTargetGridY);
+
+            if (moved && SDL_GetTicks() - lastRotationTime >= rotationDelay)
+            {
+                autoRotateCurrentShape(targetGridX, targetGridY);
+                lastMouseTargetGridX = targetGridX;
+                lastMouseTargetGridY = targetGridY;
+                lastRotationTime     = SDL_GetTicks();
+            }
         }
     }
+
 
     static bool rotationKeyHandled = false;
     if (inputHandler.isKeyJustPressed(keyBindings[Action::RotateRight])) {
@@ -556,7 +563,6 @@ void Game::processInput() {
         inputHandler.clearKeyState(SDLK_SPACE);
     }
 
-
     if (currentScreen == Screen::Settings) {
         if (inputHandler.isKeyJustPressed(SDLK_ESCAPE)) {
             currentScreen = Screen::Main;
@@ -593,13 +599,11 @@ void Game::processInput() {
         }
     }
 
-
     if (inputHandler.isKeyJustPressed(keyBindings[Action::Hold])) {
         holdPiece();
         if (soundEnabled) SoundManager::PlayHoldSound();
     }
 }
-
 
 
 void Game::update() {
@@ -796,96 +800,110 @@ bool Game::isGameOver() const {
     return board.isOccupied(currentShape.getCoords(), 0, 0);
 }
 
-void Game::autoRotateCurrentShape(int targetGridX) {
-    (void)targetGridX;
+
+void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
+{
+    constexpr int CONTACT_W  = 20;
+    constexpr int ANCHOR_W   = 80;
+    constexpr int STAB_W     = 15;
+    constexpr int ANCHOR_CAP = 4;
+    constexpr int FILL_BONUS = 1'000'000;
+
+    const int rows = board.getRows();
+    const int cols = board.getCols();
+    const auto& grid     = board.getGrid();
+    const Shape original = currentShape;
 
     int bestScore = std::numeric_limits<int>::min();
-    Shape bestOrientation = currentShape;
-    Shape original = currentShape;
+    int bestTie   = std::numeric_limits<int>::max();
+    Shape best    = currentShape;
 
-    for (int rotation = 0; rotation < 4; ++rotation) {
-        Shape candidate = original;
+    for (int rot = 0; rot < 4; ++rot)
+    {
+        Shape base = original;
+        for (int r = 0; r < rot; ++r)
+            base.rotateClockwise(grid, cols, rows);
 
-        for (int r = 0; r < rotation; r++) {
-            candidate.rotateClockwise(board.getGrid(), board.getCols(), board.getRows());
+        int minX = cols, maxX = -1;
+        for (const auto& c : base.getCoords()) {
+            minX = std::min(minX, c.first);
+            maxX = std::max(maxX, c.first);
         }
+        const int width = maxX - minX + 1;
 
-        Board tempBoard = board;
-        Shape dropped = candidate;
-        
-        while (!tempBoard.isOccupied(dropped.getCoords(), 0, 1)) {
-            dropped.moveDown();
-        }
-        
-        tempBoard.placeShape(dropped);
-        int linesCleared = tempBoard.clearFullLines();
+        for (int x = 0; x <= cols - width; ++x)
+        {
+            Shape cand = base;
+            int dxShift = x - minX;
+            for (auto& p : cand.coords) p.first += dxShift;
+            if (board.isOccupied(cand.getCoords(), 0, 0)) continue;
 
-        const int cols = tempBoard.getCols();
-        const int rows = tempBoard.getRows();
-        const auto& grid = tempBoard.getGrid();
-        
-        int aggregateHeight = 0;
-        int holes = 0;
-        int bumpiness = 0;
-        int potentialHoles = 0;
-        std::vector<int> heights(cols, 0);
-        std::vector<int> maxHeights(cols, 0);
+            Board tmp = board;
+            Shape dropped = cand;
+            while (!tmp.isOccupied(dropped.getCoords(), 0, 1))
+                dropped.moveDown();
+            tmp.placeShape(dropped);
+            int cleared = tmp.clearFullLines();
+            if (cleared) tmp.finalizeLineClear();
 
-        for (int col = 0; col < cols; col++) {
-            int columnHeight = 0;
-            for (int row = 0; row < rows; row++) {
-                if (grid[row][col] != 0) {
-                    columnHeight = rows - row;
-                    break;
-                }
+            int aggregate = 0, holes = 0, bumpiness = 0;
+            std::vector<int> heights(cols, 0);
+            const auto& g = tmp.getGrid();
+            for (int c = 0; c < cols; ++c)
+                for (int r = 0; r < rows; ++r)
+                    if (g[r][c]) { heights[c] = rows - r; aggregate += heights[c]; break; }
+
+            for (int c = 0; c < cols; ++c) {
+                bool seen = false;
+                for (int r = 0; r < rows; ++r)
+                    if (g[r][c]) seen = true; else if (seen) ++holes;
             }
-            heights[col] = columnHeight;
-            aggregateHeight += columnHeight;
-            maxHeights[col] = columnHeight;
-        }
+            for (int c = 0; c < cols - 1; ++c)
+                bumpiness += std::abs(heights[c] - heights[c+1]);
 
-        for (int col = 0; col < cols; col++) {
-            bool foundBlock = false;
-            for (int row = 0; row < rows; row++) {
-                if (grid[row][col] != 0) {
-                    foundBlock = true;
-                } else if (foundBlock) {
-                    holes++;
-                }
-                
-                if (row < rows - 1 && grid[row][col] == 0) {
-                    bool covered = false;
-                    if ((col > 0 && maxHeights[col-1] > rows - row) ||
-                        (col < cols - 1 && maxHeights[col+1] > rows - row)) {
-                        covered = true;
-                    }
-                    if (covered) potentialHoles++;
-                }
+            int contacts = countContactSegments(dropped, tmp);
+
+            int fmin = cols, fmax = -1, centreX = 0;
+            for (const auto& p : dropped.getCoords()) {
+                fmin     = std::min(fmin, p.first);
+                fmax     = std::max(fmax, p.first);
+                centreX += p.first;
             }
-        }
+            centreX /= (int)dropped.getCoords().size();
 
-        for (int i = 0; i < cols - 1; i++) {
-            bumpiness += std::abs(heights[i] - heights[i + 1]);
-        }
+            int rawDist = 0;
+            if (targetGridX < fmin) rawDist = fmin - targetGridX;
+            else if (targetGridX > fmax) rawDist = targetGridX - fmax;
+            int anchorDist = std::max(0, rawDist - 1);
+            anchorDist     = std::min(anchorDist, ANCHOR_CAP);
+            int anchorPen  = -ANCHOR_W * anchorDist * anchorDist;
 
-        int contacts = countContactSegments(dropped, tempBoard);
+            int dxPivot = std::abs(cand.coords[0].first - original.coords[0].first);
 
-        // Adjustable weights
-        int score =
-            linesCleared     * 10000 +
-            aggregateHeight  *   -7  +
-            holes            * -100  +
-            potentialHoles   *  -25  +
-            bumpiness        *   -3  +
-            contacts         *   500;
+            bool fillsTarget = false;
+            if (targetGridY >= 0 && targetGridY < rows)
+                for (const auto& p : dropped.getCoords())
+                    if (p.first == targetGridX && p.second == targetGridY) { fillsTarget = true; break; }
 
-        if (score > bestScore) {
-            bestScore = score;
-            bestOrientation = candidate;
+            int score =
+                  cleared      * 1000
+                + aggregate    *   -7
+                + holes        * -120
+                + bumpiness    *   -4
+                + contacts     *  CONTACT_W
+                + anchorPen
+                + dxPivot      *  -STAB_W
+                + (fillsTarget ? FILL_BONUS : 0);
+
+            int tie = std::max(0, std::abs(centreX - targetGridX) - 1);
+
+            if (score > bestScore || (score == bestScore && tie < bestTie)) {
+                bestScore = score; bestTie = tie; best = cand;
+            }
         }
     }
 
-    currentShape = bestOrientation;
+    currentShape = best;
 }
 
 
@@ -981,7 +999,6 @@ void Game::spawnNewShape() {
     nextPieces.pop_front();
 
     if (isGameOver()) {
-        // running = false;
         return;
     }
 
@@ -989,7 +1006,9 @@ void Game::spawnNewShape() {
     nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
 
     canHold = true;
+    lastMouseTargetGridX = std::numeric_limits<int>::min();
 }
+
 
 
 void Game::checkLevelUp() {
@@ -1364,23 +1383,46 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
 }
 
 
-int Game::countContactSegments(const Shape& shape, const Board& board) {
+int Game::countContactSegments(const Shape& shape, const Board& board)
+{
     const auto& coords = shape.getCoords();
-    const auto& grid = board.getGrid();
-    int rows = board.getRows();
-    int cols = board.getCols();
+    const auto& grid   = board.getGrid();
+    const int   rows   = board.getRows();
+    const int   cols   = board.getCols();
 
-    int contactCount = 0;
+    struct PairHash {
+        size_t operator()(const std::pair<int,int>& p) const noexcept
+        { return (static_cast<size_t>(p.first) << 16) ^ static_cast<size_t>(p.second); }
+    };
+    std::unordered_set<std::pair<int,int>, PairHash> shapeCells(coords.begin(), coords.end());
 
-    for (const auto& [x, y] : coords) {
-        if (y == rows - 1 || (y + 1 < rows && grid[y + 1][x] != 0)) contactCount++;
-        if (y == 0 || (y - 1 >= 0 && grid[y - 1][x] != 0)) contactCount++;
-        if (x == 0 || (x - 1 >= 0 && grid[y][x - 1] != 0)) contactCount++;
-        if (x == cols - 1 || (x + 1 < cols && grid[y][x + 1] != 0)) contactCount++;
+    const int dx[4] = { 0,  0, -1,  1 };
+    const int dy[4] = { -1, 1,  0,  0 };
+
+    int contacts = 0;
+
+    for (auto [x, y] : coords)
+    {
+        for (int k = 0; k < 4; ++k)
+        {
+            const int nx = x + dx[k];
+            const int ny = y + dy[k];
+
+            if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) {
+                ++contacts;
+                continue;
+            }
+
+            if (shapeCells.find({nx, ny}) != shapeCells.end())
+                continue;
+
+            if (grid[ny][nx] != 0)
+                ++contacts;
+        }
     }
-
-    return contactCount;
+    return contacts;
 }
+
 
 float Game::easeOutCubic(float t) {
     return 1.0f - std::pow(1.0f - t, 3.0f);

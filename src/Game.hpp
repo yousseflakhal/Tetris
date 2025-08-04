@@ -46,7 +46,7 @@ private:
 
     void spawnNewShape();
     bool isGameOver() const;
-    void autoRotateCurrentShape(int targetGridX);
+    void autoRotateCurrentShape(int targetGridX, int targetGridY = -1);
     int  countContactSegments(const Shape& shape, const Board& board);
 
     void renderNextPieces();
@@ -89,6 +89,9 @@ private:
     int    score = 0;
     int    level = 1;
     int    totalLinesCleared = 0;
+
+    int lastMouseTargetGridX = std::numeric_limits<int>::min();
+    int lastMouseTargetGridY = std::numeric_limits<int>::min();
 
     int    cellSize;
     int    windowWidth;
