@@ -123,9 +123,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
     const int gridGap = 1;
 
     std::unordered_set<int> clearLinesSet(linesToClear.begin(), linesToClear.end());
-
     draw_smooth_rounded_rect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, true);
-
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     for (int y = 0; y < rows; ++y) {
@@ -133,38 +131,28 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
             const int cellX = offsetX + x * cellSize + gridGap;
             const int cellY = offsetY + y * cellSize + gridGap;
             const int cellDrawSize = cellSize - 2 * gridGap;
-
             bool isFullCell = grid[y][x] != 0;
             bool isLineClearing = isClearingLines && clearLinesSet.count(y) > 0;
-
-            draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize,
-                            2, {0, 0, 0, 255}, true);
+            draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, {0, 0, 0, 255}, true);
 
             if (showPlacedBlocks && isFullCell) {
                 SDL_Color color = colorGrid[y][x];
-
                 if (isLineClearing) {
                     Uint32 currentTime = SDL_GetTicks();
                     float elapsed = static_cast<float>(currentTime - clearStartTime);
                     float progress = std::min(elapsed / 500.0f, 1.0f);
-
                     Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress));
                     float rotation = 360.0f * progress;
-
                     SDL_Rect destRect = {cellX, cellY, cellDrawSize, cellDrawSize};
 
                     if (!whiteCellTexture) {
-                        SDL_Texture* tempTexture = SDL_CreateTexture(
-                            renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                            cellDrawSize, cellDrawSize);
+                        SDL_Texture* tempTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, cellDrawSize, cellDrawSize);
                         SDL_SetTextureBlendMode(tempTexture, SDL_BLENDMODE_BLEND);
-
                         SDL_SetRenderTarget(renderer, tempTexture);
                         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
                         SDL_RenderClear(renderer);
                         draw_smooth_rounded_rect(renderer, 0, 0, cellDrawSize, cellDrawSize, 2, color, true);
                         SDL_SetRenderTarget(renderer, nullptr);
-
                         SDL_RenderCopyEx(renderer, tempTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
                         SDL_DestroyTexture(tempTexture);
                     } else {
@@ -174,28 +162,36 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                     }
                 } else {
                     SDL_Color borderColor = darker(color, 0.55f);
-
-                    draw_tetris_cell(
-                        renderer,
-                        cellX, cellY, cellDrawSize, cellDrawSize,
-                        6,
-                        1,
-                        2,
-                        color,
-                        borderColor
-                    );
-                    draw_smooth_parabolic_highlight_arc(
-                        renderer,
-                        cellX, cellY, cellDrawSize, cellDrawSize,
-                        1, 2
-                    );
+                    draw_tetris_cell(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 6, 1, 2, color, borderColor);
+                    draw_smooth_parabolic_highlight_arc(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 1, 2);
                 }
             }
         }
     }
 
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+    Uint32 now = SDL_GetTicks();
+    for (const auto& anim : hardDropAnims) {
+        Uint32 elapsed = now - anim.startTime;
+        if (elapsed > HARD_DROP_ANIM_DURATION) continue;
+        float progress = elapsed / (float)HARD_DROP_ANIM_DURATION;
+        Uint8 baseAlpha = static_cast<Uint8>(180 * (1.0f - progress * progress));
+        int cellX = offsetX + anim.col * cellSize;
+        int span = std::max(1, anim.endRow - anim.startRow);
+
+        for (int row = anim.startRow; row < anim.endRow; ++row) {
+            float rowT = (row - anim.startRow) / float(span);
+            float falloff = rowT * rowT;
+            Uint8 rowAlpha = static_cast<Uint8>(baseAlpha * falloff);
+            int cellY = offsetY + row * cellSize;
+            SDL_Rect flashRect = { cellX + 1, cellY + 1, cellSize - 2, cellSize - 2 };
+            SDL_SetRenderDrawColor(renderer, 180, 180, 180, rowAlpha);
+            SDL_RenderFillRect(renderer, &flashRect);
+        }
+    }
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
+
 
 int Board::getRows() const {
     return rows;
@@ -316,4 +312,37 @@ void Board::updateLandingAnimations() {
                 return now - a.startTime > (FADE_OUT_MS + FADE_IN_MS);
             }),
         landingAnims.end());
+}
+
+void Board::triggerHardDropAnim(const Shape& shape) {
+    Uint32 now = SDL_GetTicks();
+    std::unordered_map<int, int> topRows;
+    
+    for (const auto& coord : shape.getCoords()) {
+        int col = coord.first;
+        if (topRows.find(col) == topRows.end() || coord.second < topRows[col]) {
+            topRows[col] = coord.second;
+        }
+    }
+    
+    for (const auto& [col, row] : topRows) {
+        hardDropAnims.push_back({col, 0, row, now});
+    }
+}
+
+void Board::updateHardDropAnimations() {
+    Uint32 now = SDL_GetTicks();
+    auto it = hardDropAnims.begin();
+    while (it != hardDropAnims.end()) {
+        if (now - it->startTime > HARD_DROP_ANIM_DURATION) {
+            it = hardDropAnims.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void Board::updateAnimations() {
+    updateLandingAnimations();
+    updateHardDropAnimations();
 }

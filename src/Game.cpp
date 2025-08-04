@@ -539,6 +539,7 @@ void Game::processInput() {
         }
 
         board.placeShape(currentShape);
+        board.triggerHardDropAnim(currentShape);
         if (soundEnabled) SoundManager::PlayDropSound();
 
         int clearedLines = board.clearFullLines();
@@ -577,6 +578,7 @@ void Game::processInput() {
         }
 
         board.placeShape(currentShape);
+        board.triggerHardDropAnim(currentShape);
         if (soundEnabled) SoundManager::PlayDropSound();
 
         int clearedLines = board.clearFullLines();
@@ -637,6 +639,9 @@ void Game::update() {
         isMusicPlaying = true;
     }
 
+    board.updateAnimations();
+
+
     Uint32 currentTime = SDL_GetTicks();
 
     if (board.isClearingLines) {
@@ -686,7 +691,6 @@ void Game::render() {
     if (isPaused || currentScreen == Screen::Settings) {
         board.draw(renderer, 200, 10, false);
     } else {
-        board.updateLandingAnimations();
         board.draw(renderer, 200, 10, !resumeCountdownActive);
         if (!resumeCountdownActive && !isGameOver() && !board.isClearingLines) {
             shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);

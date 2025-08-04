@@ -18,6 +18,14 @@ public:
         Uint32 startTime;
     };
 
+    struct HardDropAnim {
+        int    col;
+        int    startRow;
+        int    endRow;
+        Uint32 startTime;
+    };
+
+
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor);
     ~Board();
 
@@ -30,6 +38,9 @@ public:
     void finalizeLineClear();
     void clearBoard();
     void updateLandingAnimations();
+    void triggerHardDropAnim(const Shape& shape);
+    void updateHardDropAnimations();
+    void updateAnimations();
 
     Uint8 landingAlpha(int x, int y, Uint32 now) const;
 
@@ -53,6 +64,8 @@ private:
     int       cols;
     int       cellSize;
     SDL_Color backgroundColor;
+    std::vector<HardDropAnim> hardDropAnims;
+    static constexpr Uint32   HARD_DROP_ANIM_DURATION = 300;
 
     std::vector<std::vector<int>>       grid;
     std::vector<std::vector<SDL_Color>> colorGrid;
