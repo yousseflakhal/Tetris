@@ -118,11 +118,18 @@ int Board::clearFullLines() {
 }
 
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const {
+    if (!whiteCellTexture) {
+        const_cast<Board*>(this)->initializeTexture(renderer);
+    }
     const int boardWidth = cols * cellSize;
     const int boardHeight = rows * cellSize;
     const int gridGap = 1;
 
-    std::unordered_set<int> clearLinesSet(linesToClear.begin(), linesToClear.end());
+    auto isRowClearing = [this](int y) {
+        for (int r : linesToClear) if (r == y) return true;
+        return false;
+    };
+
     draw_smooth_rounded_rect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, true);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
@@ -132,7 +139,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
             const int cellY = offsetY + y * cellSize + gridGap;
             const int cellDrawSize = cellSize - 2 * gridGap;
             bool isFullCell = grid[y][x] != 0;
-            bool isLineClearing = isClearingLines && clearLinesSet.count(y) > 0;
+            bool isLineClearing = isClearingLines && isRowClearing(y);
             draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, {0, 0, 0, 255}, true);
 
             if (showPlacedBlocks && isFullCell) {
@@ -296,17 +303,24 @@ void Board::clearBoard() {
 void Board::finalizeLineClear() {
     if (!isClearingLines) return;
 
-    std::sort(linesToClear.begin(), linesToClear.end(), std::greater<int>());
+    // Mark rows to clear (max 4); no need to sort linesToClear if we compact.
+    std::vector<char> clear(rows, 0);
+    for (int y : linesToClear) clear[y] = 1;
 
-    for (int line : linesToClear) {
-        grid.erase(grid.begin() + line);
-        colorGrid.erase(colorGrid.begin() + line);
+    int write = rows - 1;
+    for (int read = rows - 1; read >= 0; --read) {
+        if (!clear[read]) {
+            if (write != read) {
+                grid[write]      = std::move(grid[read]);
+                colorGrid[write] = std::move(colorGrid[read]);
+            }
+            --write;
+        }
     }
-
-    int numLinesCleared = static_cast<int>(linesToClear.size());
-    for (int i = 0; i < numLinesCleared; ++i) {
-        grid.insert(grid.begin(), std::vector<int>(cols, 0));
-        colorGrid.insert(colorGrid.begin(), std::vector<SDL_Color>(cols, {0,0,0,0}));
+    // Fill cleared rows at top
+    for (; write >= 0; --write) {
+        grid[write].assign(cols, 0);
+        colorGrid[write].assign(cols, SDL_Color{0,0,0,0});
     }
 
     isClearingLines = false;
@@ -339,12 +353,14 @@ void Board::triggerHardDropAnim(const Shape& shape) {
     for (const auto& [col, row] : topRows) {
         hardDropAnims.push_back({col, 0, row, now});
 
+        const int maxSpan = std::max(row, 1);
+        const int denom   = maxSpan * 100;
+
         for (int i = 0; i < 5; ++i) {
             float fx = col + 0.5f;
-            float fy = (rand() % (row * 100)) / 100.0f;
+            float fy = (denom > 0 ? (rand() % denom) : 0) / 100.0f;
             float vx = 0.0f;
             float vy = -0.05f - ((rand() % 30) / 300.0f);
-
             bubbleParticles.push_back({fx, fy, vx, vy, 255, now});
         }
     }

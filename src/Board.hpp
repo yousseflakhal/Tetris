@@ -3,7 +3,6 @@
 #include <SDL2/SDL.h>
 #include <utility>
 #include <vector>
-#include <unordered_set>
 
 #include "Shape.hpp"
 

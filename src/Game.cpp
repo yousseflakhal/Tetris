@@ -376,11 +376,7 @@ void Game::processInput() {
             countdownStartTime = SDL_GetTicks();
             isPaused = false;
             inputHandler.clearKeyState(SDLK_ESCAPE);
-
             totalPausedTime += SDL_GetTicks() - pauseStartTime;
-            resumeCountdownActive = true;
-            countdownStartTime = SDL_GetTicks();
-
             if (!isMusicPlaying) {
                 if (soundEnabled) SoundManager::ResumeBackgroundMusic();
                 isMusicPlaying = true;
@@ -485,31 +481,18 @@ void Game::processInput() {
             mouseX >= 0 && mouseX < board.getCols()*cellSize &&
             mouseY >= 0 && mouseY < board.getRows()*cellSize;
 
-        if (mouseControlEnabled && insideBoard)
-        {
-            int targetGridX = mouseX / cellSize;
-            int targetGridY = mouseY / cellSize;
+        if (mouseControlEnabled && insideBoard) {
+            int targetGridX = std::clamp(mouseX / cellSize, 0, board.getCols()-1);
+            int targetGridY = std::clamp(mouseY / cellSize, 0, board.getRows()-1);
 
-            int anchorX = targetGridX;
-            int bonusX  = targetGridX;
-            if (currentShape.getType() == Shape::Type::O)
-            {
-                anchorX -= 1;
-                bonusX   = targetGridX;
-            }
+            snapShapeHorizontally(targetGridX);
 
-            targetGridX = std::clamp(targetGridX, 0, board.getCols()-1);
-            targetGridY = std::clamp(targetGridY, 0, board.getRows()-1);
-
-            bool moved = (targetGridX != lastMouseTargetGridX) ||
-                        (targetGridY != lastMouseTargetGridY);
-
-            if (moved && SDL_GetTicks() - lastRotationTime >= rotationDelay)
-            {
+            static Uint32 lastAutoPlace = 0;
+            const Uint32 intervalMs = 16;
+            Uint32 now = SDL_GetTicks();
+            if (now - lastAutoPlace >= intervalMs) {
                 autoRotateCurrentShape(targetGridX, targetGridY);
-                lastMouseTargetGridX = targetGridX;
-                lastMouseTargetGridY = targetGridY;
-                lastRotationTime     = SDL_GetTicks();
+                lastAutoPlace = now;
             }
         }
     }
@@ -804,70 +787,98 @@ bool Game::isGameOver() const {
 void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
 {
     constexpr int CONTACT_W  = 20;
-    constexpr int ANCHOR_W   = 80;
+    const int ANCHOR_W   = autoPlaceAnchorW;
     constexpr int STAB_W     = 15;
-    constexpr int ANCHOR_CAP = 4;
+    constexpr int ANCHOR_CAP = 2;
     constexpr int FILL_BONUS = 1'000'000;
 
     const int rows = board.getRows();
     const int cols = board.getCols();
-    const auto& grid     = board.getGrid();
+    const auto& grid = board.getGrid();
     const Shape original = currentShape;
+
+    static std::vector<std::vector<int>> scratch;
+    scratch.assign(rows, std::vector<int>(cols, 0));
+    for (int r = 0; r < rows; ++r)
+        for (int c = 0; c < cols; ++c)
+            scratch[r][c] = grid[r][c] ? 1 : 0;
+
+    struct RotInfo {
+        Shape shape;
+        int   minX, maxX, width;
+        explicit RotInfo(const Shape& s) : shape(s), minX(0), maxX(0), width(0) {}
+    };
+
+    auto computeBounds = [&](const Shape& s, int& mn, int& mx) {
+        mn = cols; mx = -1;
+        for (const auto& c : s.getCoords()) { mn = std::min(mn, c.first); mx = std::max(mx, c.first); }
+    };
+
+    std::vector<RotInfo> rots; rots.reserve(4);
+
+    RotInfo r0(original);
+    computeBounds(r0.shape, r0.minX, r0.maxX);
+    r0.width = r0.maxX - r0.minX + 1;
+    rots.push_back(std::move(r0));
+
+    for (int i = 1; i < 4; ++i) {
+        RotInfo ri(rots.back().shape);
+        ri.shape.rotateClockwise(grid, cols, rows);
+        computeBounds(ri.shape, ri.minX, ri.maxX);
+        ri.width = ri.maxX - ri.minX + 1;
+        rots.push_back(std::move(ri));
+    }
 
     int bestScore = std::numeric_limits<int>::min();
     int bestTie   = std::numeric_limits<int>::max();
     Shape best    = currentShape;
+    bool foundAny = false;
 
-    for (int rot = 0; rot < 4; ++rot)
-    {
-        Shape base = original;
-        for (int r = 0; r < rot; ++r)
-            base.rotateClockwise(grid, cols, rows);
-
-        int minX = cols, maxX = -1;
-        for (const auto& c : base.getCoords()) {
-            minX = std::min(minX, c.first);
-            maxX = std::max(maxX, c.first);
-        }
-        const int width = maxX - minX + 1;
-
-        for (int x = 0; x <= cols - width; ++x)
+    auto evalRange = [&](const RotInfo& base, int startX, int endX) {
+        bool localFound = false;
+        for (int xLeft = startX; xLeft <= endX; ++xLeft)
         {
-            Shape cand = base;
-            int dxShift = x - minX;
+            Shape cand = base.shape;
+            int dxShift = xLeft - base.minX;
             for (auto& p : cand.coords) p.first += dxShift;
             if (board.isOccupied(cand.getCoords(), 0, 0)) continue;
 
-            Board tmp = board;
             Shape dropped = cand;
-            while (!tmp.isOccupied(dropped.getCoords(), 0, 1))
+            while (!board.isOccupied(dropped.getCoords(), 0, 1))
                 dropped.moveDown();
-            tmp.placeShape(dropped);
-            int cleared = tmp.clearFullLines();
-            if (cleared) tmp.finalizeLineClear();
+
+            for (const auto& p : dropped.getCoords())
+                if (p.second >= 0 && p.second < rows && p.first >= 0 && p.first < cols)
+                    scratch[p.second][p.first] = 1;
+
+            int cleared = 0;
+            for (int r = 0; r < rows; ++r) {
+                bool full = true;
+                for (int c = 0; c < cols; ++c) { if (!scratch[r][c]) { full = false; break; } }
+                if (full) ++cleared;
+            }
 
             int aggregate = 0, holes = 0, bumpiness = 0;
             std::vector<int> heights(cols, 0);
-            const auto& g = tmp.getGrid();
-            for (int c = 0; c < cols; ++c)
-                for (int r = 0; r < rows; ++r)
-                    if (g[r][c]) { heights[c] = rows - r; aggregate += heights[c]; break; }
-
+            for (int c = 0; c < cols; ++c) {
+                for (int r = 0; r < rows; ++r) {
+                    if (scratch[r][c]) { heights[c] = rows - r; aggregate += heights[c]; break; }
+                }
+            }
             for (int c = 0; c < cols; ++c) {
                 bool seen = false;
-                for (int r = 0; r < rows; ++r)
-                    if (g[r][c]) seen = true; else if (seen) ++holes;
+                for (int r = 0; r < rows; ++r) { if (scratch[r][c]) seen = true; else if (seen) ++holes; }
             }
-            for (int c = 0; c < cols - 1; ++c)
-                bumpiness += std::abs(heights[c] - heights[c+1]);
+            for (int c = 0; c < cols - 1; ++c) bumpiness += std::abs(heights[c] - heights[c+1]);
 
-            int contacts = countContactSegments(dropped, tmp);
+            int contacts = countContactSegments(dropped, board);
 
-            int fmin = cols, fmax = -1, centreX = 0;
+            int fmin = cols, fmax = -1, centreX = 0, minY = rows;
             for (const auto& p : dropped.getCoords()) {
-                fmin     = std::min(fmin, p.first);
-                fmax     = std::max(fmax, p.first);
+                fmin = std::min(fmin, p.first);
+                fmax = std::max(fmax, p.first);
                 centreX += p.first;
+                minY = std::min(minY, p.second);
             }
             centreX /= (int)dropped.getCoords().size();
 
@@ -885,6 +896,10 @@ void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
                 for (const auto& p : dropped.getCoords())
                     if (p.first == targetGridX && p.second == targetGridY) { fillsTarget = true; break; }
 
+            int yAlignBonus = 0;
+            if (targetGridY >= 0 && targetGridY < rows)
+                yAlignBonus = -std::abs(minY - targetGridY) * 5;
+
             int score =
                   cleared      * 1000
                 + aggregate    *   -7
@@ -893,18 +908,66 @@ void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
                 + contacts     *  CONTACT_W
                 + anchorPen
                 + dxPivot      *  -STAB_W
-                + (fillsTarget ? FILL_BONUS : 0);
+                + (fillsTarget ? FILL_BONUS : 0)
+                + yAlignBonus;
 
             int tie = std::max(0, std::abs(centreX - targetGridX) - 1);
 
             if (score > bestScore || (score == bestScore && tie < bestTie)) {
-                bestScore = score; bestTie = tie; best = cand;
+                bestScore = score; bestTie = tie; best = cand; localFound = true;
             }
+
+            for (const auto& p : dropped.getCoords())
+                if (p.second >= 0 && p.second < rows && p.first >= 0 && p.first < cols)
+                    scratch[p.second][p.first] = grid[p.second][p.first] ? 1 : 0;
         }
+        return localFound;
+    };
+
+    for (const auto& base : rots)
+    {
+        int W = autoPlaceWindow;
+        int startX = std::max(0, targetGridX - W);
+        int endX   = std::min(cols - base.width, targetGridX + W);
+        if (startX <= endX) foundAny |= evalRange(base, startX, endX);
+        if (!foundAny && cols - base.width >= 0) foundAny |= evalRange(base, 0, cols - base.width);
     }
 
     currentShape = best;
 }
+
+
+void Game::snapShapeHorizontally(int targetX)
+{
+    int minX = INT_MAX, maxX = INT_MIN;
+    for (auto &c : currentShape.coords) {
+        minX = std::min(minX, c.first);
+        maxX = std::max(maxX, c.first);
+    }
+
+    const int leftBias = (currentShape.getType() == Shape::Type::O) ? 1 : 0;
+    int desiredMinX = std::clamp(targetX - leftBias, 0, board.getCols() - (maxX - minX + 1));
+    int dx = desiredMinX - minX;
+
+    if (std::abs(dx) <= mouseMagnetRadius) return;
+
+    mouseXAccumulator += dx * mouseFollowStrength;
+
+    int steps = static_cast<int>(std::floor(std::abs(mouseXAccumulator)));
+    if (steps <= 0) return;
+
+    int dir = (mouseXAccumulator > 0.0f) ? 1 : -1;
+    for (int i = 0; i < steps; ++i) {
+        if (!board.isOccupied(currentShape.getCoords(), dir, 0)) {
+            for (auto &c : currentShape.coords) c.first += dir;
+            mouseXAccumulator -= dir;
+        } else {
+            mouseXAccumulator = 0.0f;
+            break;
+        }
+    }
+}
+
 
 
 void Game::renderNextPieces() {

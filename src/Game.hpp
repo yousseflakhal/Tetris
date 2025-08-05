@@ -47,6 +47,7 @@ private:
     void spawnNewShape();
     bool isGameOver() const;
     void autoRotateCurrentShape(int targetGridX, int targetGridY = -1);
+    void snapShapeHorizontally(int targetGridX);
     int  countContactSegments(const Shape& shape, const Board& board);
 
     void renderNextPieces();
@@ -120,6 +121,12 @@ private:
     bool   startGameTimerAfterCountdown = true;
     bool   mouseControlEnabled = true;
     Screen currentScreen = Screen::Main;
+
+    int   autoPlaceWindow     = 3;
+    int   mouseMagnetRadius   = 0;
+    float mouseFollowStrength = 0.35f;
+    float mouseXAccumulator   = 0.0f;
+    float autoPlaceAnchorW    = 10.0f;
 
     InputHandler inputHandler;
 
