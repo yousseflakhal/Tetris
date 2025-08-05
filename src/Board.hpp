@@ -25,6 +25,13 @@ public:
         Uint32 startTime;
     };
 
+    struct BubbleParticle {
+        float  x, y;
+        float  vx, vy;
+        Uint8  alpha;
+        Uint32 startTime;
+    };
+
 
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor);
     ~Board();
@@ -41,6 +48,7 @@ public:
     void triggerHardDropAnim(const Shape& shape);
     void updateHardDropAnimations();
     void updateAnimations();
+    void updateBubbleParticles();
 
     Uint8 landingAlpha(int x, int y, Uint32 now) const;
 
@@ -70,4 +78,6 @@ private:
     std::vector<std::vector<int>>       grid;
     std::vector<std::vector<SDL_Color>> colorGrid;
     std::vector<int>                    linesToClear;
+    std::vector<BubbleParticle>         bubbleParticles;
+
 };

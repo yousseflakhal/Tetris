@@ -190,7 +190,18 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
         }
     }
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-}
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    for (const auto& p : bubbleParticles) {
+        int px = offsetX + static_cast<int>(p.x * cellSize);
+        int py = offsetY + static_cast<int>(p.y * cellSize);
+        int radius = std::max(1, cellSize / 16);
+
+        SDL_Color col{255, 255, 255, p.alpha};
+        drawAACircle(renderer, px, py, radius, col);
+    }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    }
 
 
 int Board::getRows() const {
@@ -327,6 +338,15 @@ void Board::triggerHardDropAnim(const Shape& shape) {
     
     for (const auto& [col, row] : topRows) {
         hardDropAnims.push_back({col, 0, row, now});
+
+        for (int i = 0; i < 5; ++i) {
+            float fx = col + 0.5f;
+            float fy = (rand() % (row * 100)) / 100.0f;
+            float vx = 0.0f;
+            float vy = -0.05f - ((rand() % 30) / 300.0f);
+
+            bubbleParticles.push_back({fx, fy, vx, vy, 255, now});
+        }
     }
 }
 
@@ -342,7 +362,26 @@ void Board::updateHardDropAnimations() {
     }
 }
 
+void Board::updateBubbleParticles() {
+    Uint32 now = SDL_GetTicks();
+    bubbleParticles.erase(
+        std::remove_if(bubbleParticles.begin(), bubbleParticles.end(),
+            [now](const BubbleParticle& p) {
+                return now - p.startTime > 600;
+            }),
+        bubbleParticles.end()
+    );
+
+    for (auto& p : bubbleParticles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        float lifeRatio = (now - p.startTime) / 600.0f;
+        p.alpha = Uint8(255 * (1.0f - lifeRatio * lifeRatio));
+    }
+}
+
 void Board::updateAnimations() {
     updateLandingAnimations();
     updateHardDropAnimations();
+    updateBubbleParticles();
 }

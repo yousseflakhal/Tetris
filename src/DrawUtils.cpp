@@ -1,18 +1,28 @@
 #include "DrawUtils.hpp"
 
-void drawAACircle(SDL_Renderer* renderer, int cx, int cy, int radius) {
-    for (int dy = -radius; dy <= radius; dy++) {
-        for (int dx = -radius; dx <= radius; dx++) {
-            float distance = sqrtf(dx*dx + dy*dy);
-            if (distance <= radius) {
-                float alpha = 1.0f - fmaxf(0.0f, fminf(1.0f, distance - (radius - 1)));
-                Uint8 r, g, b, a;
-                SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
-                SDL_SetRenderDrawColor(renderer, r, g, b, static_cast<Uint8>(alpha * a));
+void drawAACircle(SDL_Renderer* renderer, int cx, int cy, int radius, SDL_Color color) {
+    if (radius <= 0) return;
+
+    SDL_BlendMode prev;
+    SDL_GetRenderDrawBlendMode(renderer, &prev);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    const Uint8 baseR = color.r, baseG = color.g, baseB = color.b, baseA = color.a;
+
+    for (int dy = -radius; dy <= radius; ++dy) {
+        for (int dx = -radius; dx <= radius; ++dx) {
+            float d = std::sqrt(float(dx*dx + dy*dy));
+            if (d <= radius) {
+                float edge = radius - d;
+                float aFrac = std::clamp(edge, 0.0f, 1.0f);
+                Uint8 a = static_cast<Uint8>(baseA * aFrac);
+                if (a == 0) continue;
+                SDL_SetRenderDrawColor(renderer, baseR, baseG, baseB, a);
                 SDL_RenderDrawPoint(renderer, cx + dx, cy + dy);
             }
         }
     }
+    SDL_SetRenderDrawBlendMode(renderer, prev);
 }
 
 void drawUIMenuRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h,
