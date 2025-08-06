@@ -1107,7 +1107,7 @@ void Game::checkLevelUp() {
     if (newLevel > level) {
         level = newLevel;
         updateSpeed();
-        std::cout << "Level Up New Level: " << level << std::endl;
+        triggerLevelUpPopup();
     }
 }
 
@@ -1664,12 +1664,40 @@ void Game::renderScorePopups() {
         float aOut = (t > 0.75f) ? clamp01(1.f - (t - 0.75f) / 0.25f) : 1.f;
         Uint8 alpha = Uint8(255 * aIn * aOut);
 
-        float s = 0.92f + 0.08f * easeOutQuad(std::min(t / 0.2f, 1.f));
+        TTF_Font* useFont = (fontMedium ? fontMedium : fontDefault);
+        float sAnim = 0.92f + 0.08f * easeOutQuad(std::min(t / 0.2f, 1.f));
+        float s = sAnim;
+
+        if (p.text == "Level up!") {
+            if (fontLarge) useFont = fontLarge;
+            s *= 1.8f;
+        }
 
         SDL_Color col = p.color; 
         col.a = alpha;
 
-        TTF_Font* useFont = (fontMedium ? fontMedium : fontDefault);
+        useFont = (fontMedium ? fontMedium : fontDefault);
         renderTextCenteredScaled(p.text, int(p.x), int(y), col, s, useFont);
     }
+}
+
+void Game::triggerLevelUpPopup() {
+    const int boardOffsetX = 200;
+    const int boardOffsetY = 10;
+
+    const float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
+    const float cy = boardOffsetY + board.getCellSize() * 5.5f;
+
+    Uint32 now = SDL_GetTicks();
+
+    scorePopups.push_back(ScorePopup{
+        "Level up!",
+        SDL_Color{255,255,255,255},
+        cx,
+        cy,
+        80.0f,
+        SDL_GetTicks(),
+        0u,
+        1200u
+    });
 }

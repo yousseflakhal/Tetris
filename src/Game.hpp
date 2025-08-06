@@ -50,6 +50,7 @@ private:
         Uint32      start;
         Uint32      delay;
         Uint32      duration;
+        float       scale = 1.0f;
     };
     std::vector<ScorePopup> scorePopups;
 
@@ -84,6 +85,7 @@ private:
     static float easeOutCubic(float t);
     static float easeInOutQuad(float t);
     void triggerScorePopup(int clearedLines, int linePoints);
+    void triggerLevelUpPopup();
     void updateScorePopups();
     void renderScorePopups();
 
