@@ -3,6 +3,8 @@
 #include <SDL2/SDL.h>
 #include <utility>
 #include <vector>
+#include <string>
+#include <cmath>
 
 #include "Shape.hpp"
 
@@ -31,6 +33,17 @@ public:
         Uint32 startTime;
     };
 
+    struct ScorePopup {
+        std::string text;
+        SDL_Color   color;
+        float       x;
+        float       y0;
+        float       rise;
+        Uint32      start;
+        Uint32      delay;
+        Uint32      duration;
+    };
+
 
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor);
     ~Board();
@@ -55,6 +68,7 @@ public:
     int  getCols() const;
     int  getCellSize() const;
     const std::vector<std::vector<int>>& getGrid() const;
+    const std::vector<int>& getLinesToClear() const;
 
     int  countFullLines() const;
     int  countHoles() const;
@@ -79,4 +93,35 @@ private:
     std::vector<int>                    linesToClear;
     std::vector<BubbleParticle>         bubbleParticles;
 
+    std::vector<ScorePopup> scorePopups;
+    void triggerScorePopup(int clearedLines, int linePoints);
+    void updateScorePopups();
+    void renderScorePopups();
+
+    static float easeOutCubic(float t) {
+        return 1.0f - std::pow(1.0f - t, 3.0f);
+    }
+    static float easeInOutQuad(float t) {
+        return (t < 0.5f) ? (2.0f * t * t)
+                          : (1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) * 0.5f);
+    }
+
+    static float clamp01(float v) { return v < 0.f ? 0.f : (v > 1.f ? 1.f : v); }
+    static float easeOutQuad(float t) { return 1.f - (1.f - t)*(1.f - t); }
+
+    static float popupScale(float t) {
+        const float grow = 0.30f, hold = 0.15f, settle = 0.55f;
+        const float s0 = 0.65f, sOver = 1.25f, sEnd = 1.0f;
+
+        if (t < grow) {
+            float p = t / grow;
+            return s0 + (sOver - s0) * easeOutCubic(p);
+        } else if (t < grow + hold) {
+            return sOver;
+        } else {
+            float p = (t - (grow + hold)) / settle;
+            if (p > 1.f) p = 1.f;
+            return sOver + (sEnd - sOver) * easeInOutQuad(p);
+        }
+    }
 };

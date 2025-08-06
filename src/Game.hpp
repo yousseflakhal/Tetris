@@ -13,6 +13,7 @@
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+#include <algorithm>
 
 #include "Board.hpp"
 #include "Shape.hpp"
@@ -39,6 +40,18 @@ public:
 
 private:
     enum class Screen { Main, Settings };
+
+    struct ScorePopup {
+        std::string text;
+        SDL_Color   color;
+        float       x;
+        float       y0;
+        float       rise;
+        Uint32      start;
+        Uint32      delay;
+        Uint32      duration;
+    };
+    std::vector<ScorePopup> scorePopups;
 
     void processInput();
     void update();
@@ -70,6 +83,9 @@ private:
     float countdownScale(Uint32 msInSecond) const;
     static float easeOutCubic(float t);
     static float easeInOutQuad(float t);
+    void triggerScorePopup(int clearedLines, int linePoints);
+    void updateScorePopups();
+    void renderScorePopups();
 
     SDL_Window*   window = nullptr;
     SDL_Renderer* renderer = nullptr;
@@ -166,4 +182,21 @@ private:
     std::shared_ptr<UIButton> doneBtn;
     std::shared_ptr<UICheckbox> mouseControlCheckbox;
     std::shared_ptr<UICheckbox> soundCheckbox;
+
+    static float clamp01(float v) { return v < 0.f ? 0.f : (v > 1.f ? 1.f : v); }
+    static float easeOutQuad(float t) { return 1.f - (1.f - t) * (1.f - t); }
+    static float popupScale(float t) {
+        const float grow = 0.30f, hold = 0.15f, settle = 0.55f;
+        const float s0 = 0.65f, sOver = 1.25f, sEnd = 1.0f;
+        if (t < grow) {
+            float p = t / grow;
+            return s0 + (sOver - s0) * easeOutCubic(p);
+        } else if (t < grow + hold) {
+            return sOver;
+        } else {
+            float p = (t - (grow + hold)) / settle;
+            if (p > 1.f) p = 1.f;
+            return sOver + (sEnd - sOver) * easeInOutQuad(p);
+        }
+    }
 };

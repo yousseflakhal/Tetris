@@ -573,6 +573,18 @@ void Game::processInput() {
         int clearedLines = board.clearFullLines();
         updateScore(clearedLines, dropDistance, true);
 
+        int basePoints = 0;
+        switch (clearedLines) {
+            case 1: basePoints = 40 * (level + 1); break;
+            case 2: basePoints = 100 * (level + 1); break;
+            case 3: basePoints = 300 * (level + 1); break;
+            case 4: basePoints = 1200 * (level + 1); break;
+            default: break;
+        }
+        if (clearedLines > 0) {
+            triggerScorePopup(clearedLines, basePoints);
+        }
+
         Uint32 now = SDL_GetTicks();
         if (clearedLines > 0) {
             board.clearStartTime = now;
@@ -590,6 +602,7 @@ void Game::processInput() {
 
 
 void Game::update() {
+    updateScorePopups();
     bool gameOver = isGameOver();
 
     if (resumeCountdownActive || isPaused || gameOver) {
@@ -651,6 +664,18 @@ void Game::update() {
             int clearedLines = board.clearFullLines();
             updateScore(clearedLines, 0, false);
 
+            int basePoints = 0;
+            switch (clearedLines) {
+                case 1: basePoints = 40 * (level + 1); break;
+                case 2: basePoints = 100 * (level + 1); break;
+                case 3: basePoints = 300 * (level + 1); break;
+                case 4: basePoints = 1200 * (level + 1); break;
+                default: break;
+            }
+            if (clearedLines > 0) {
+                triggerScorePopup(clearedLines, basePoints);
+            }
+
             if (clearedLines > 0) {
                 board.clearStartTime = currentTime;
             } else {
@@ -684,6 +709,8 @@ void Game::render() {
             currentShape.draw(renderer, board.getCellSize(), 200, 10);
         }
     }
+
+    renderScorePopups();
 
     renderNextPieces();
     renderHoldPiece();
@@ -1561,4 +1588,88 @@ void Game::renderTextCenteredScaled(const std::string& text, int cx, int cy,
 
     SDL_DestroyTexture(tex);
     SDL_FreeSurface(surf);
+}
+
+void Game::triggerScorePopup(int clearedLines, int linePoints) {
+    if (clearedLines <= 0) return;
+
+    const int boardOffsetX = 200;
+    const int boardOffsetY = 10;
+    float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
+
+    float avgRow = 0.f;
+    const auto& rows = board.getLinesToClear();
+    if (!rows.empty()) {
+        for (int r : rows) avgRow += r;
+        avgRow /= rows.size();
+    }
+    float cy = boardOffsetY + (avgRow + 0.5f) * board.getCellSize();
+
+    const Uint32 dur  = 800;
+    const float  rise = 40.f;
+
+    const int labelYOffset  = -12;
+    const int pointsYOffset = +6;
+
+    const SDL_Color white = {255, 255, 255, 255};
+
+    std::string label;
+    switch (clearedLines) {
+        case 1: label = "Single"; break;
+        case 2: label = "Double"; break;
+        case 3: label = "Triple"; break;
+        default: label = "Tetris"; break;
+    }
+
+    Uint32 now = SDL_GetTicks();
+
+    scorePopups.push_back(ScorePopup{
+        label, white, cx, cy + labelYOffset, rise, now, 0, dur
+    });
+
+    scorePopups.push_back(ScorePopup{
+        std::string("+") + std::to_string(linePoints),
+        white, cx, cy + pointsYOffset, rise, now, 60, dur
+    });
+
+}
+
+
+void Game::updateScorePopups() {
+    Uint32 now = SDL_GetTicks();
+    scorePopups.erase(
+        std::remove_if(scorePopups.begin(), scorePopups.end(),
+            [now](const ScorePopup& p) {
+                if (now < p.start + p.delay) return false;
+                return now >= p.start + p.delay + p.duration;
+            }),
+        scorePopups.end()
+    );
+}
+
+void Game::renderScorePopups() {
+    if (scorePopups.empty()) return;
+
+    Uint32 now = SDL_GetTicks();
+    for (const auto& p : scorePopups) {
+        if (now < p.start + p.delay) continue;
+
+        float t = (now - (p.start + p.delay)) / float(p.duration);
+        t = clamp01(t);
+
+        float dy = p.rise * easeOutQuad(t);
+        float y  = p.y0 - dy;
+
+        float aIn  = clamp01(t / 0.12f);
+        float aOut = (t > 0.75f) ? clamp01(1.f - (t - 0.75f) / 0.25f) : 1.f;
+        Uint8 alpha = Uint8(255 * aIn * aOut);
+
+        float s = 0.92f + 0.08f * easeOutQuad(std::min(t / 0.2f, 1.f));
+
+        SDL_Color col = p.color; 
+        col.a = alpha;
+
+        TTF_Font* useFont = (fontMedium ? fontMedium : fontDefault);
+        renderTextCenteredScaled(p.text, int(p.x), int(y), col, s, useFont);
+    }
 }

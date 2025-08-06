@@ -227,6 +227,10 @@ const std::vector<std::vector<int>>& Board::getGrid() const {
     return grid;
 }
 
+const std::vector<int>& Board::getLinesToClear() const {
+    return linesToClear;
+}
+
 int Board::countFullLines() const {
     int fullLineCount = 0;
     for (int y = 0; y < rows; ++y) {
@@ -303,7 +307,6 @@ void Board::clearBoard() {
 void Board::finalizeLineClear() {
     if (!isClearingLines) return;
 
-    // Mark rows to clear (max 4); no need to sort linesToClear if we compact.
     std::vector<char> clear(rows, 0);
     for (int y : linesToClear) clear[y] = 1;
 
@@ -317,7 +320,6 @@ void Board::finalizeLineClear() {
             --write;
         }
     }
-    // Fill cleared rows at top
     for (; write >= 0; --write) {
         grid[write].assign(cols, 0);
         colorGrid[write].assign(cols, SDL_Color{0,0,0,0});
