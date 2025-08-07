@@ -1111,28 +1111,27 @@ void Game::checkLevelUp() {
     }
 }
 
-void Game::updateScore(int clearedLines, int dropDistance, bool hardDrop) {
+void Game::updateScore(int clearedLines,int dropDistance, bool hardDrop)
+{
     if (clearedLines > 0) {
         totalLinesCleared += clearedLines;
         if (soundEnabled) SoundManager::PlayClearSound();
     }
 
     int points = 0;
-
     switch (clearedLines) {
-        case 1: points += 40 * (level + 1); break;
-        case 2: points += 100 * (level + 1); break;
-        case 3: points += 300 * (level + 1); break;
-        case 4: points += 1200 * (level + 1); break;
+        case 1: points += 40;   break;
+        case 2: points += 100;  break;
+        case 3: points += 300;  break;
+        case 4: points += 1200; break;
     }
+    points *= (level + 1);
+    points += dropDistance * (hardDrop ? 2 : 1);
+    score  += points;
 
-    if (hardDrop) {
-        points += dropDistance * 2;
-    } else {
-        points += dropDistance * 1;
+    if (clearedLines > 0) {
+        triggerScorePopup(clearedLines, points);
     }
-
-    score += points;
 
     checkLevelUp();
 }
