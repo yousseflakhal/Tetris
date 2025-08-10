@@ -4,9 +4,7 @@
 Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor)
     : rows(rows), cols(cols), cellSize(cellSize), backgroundColor(backgroundColor),
       grid(rows, std::vector<int>(cols, 0)),
-      colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0})) {
-    whiteCellTexture = nullptr;
-}
+      colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0})) {}
 
 Board::~Board() {
     if (whiteCellTexture) {
