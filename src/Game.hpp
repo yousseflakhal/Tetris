@@ -62,7 +62,7 @@ private:
     bool isGameOver() const;
     void autoRotateCurrentShape(int targetGridX, int targetGridY = -1);
     void snapShapeHorizontally(int targetGridX);
-    int  countContactSegments(const Shape& shape, const Board& board);
+    int  countContactSegments(const Shape& shape, const Board& board) const;
 
     void renderNextPieces();
     void renderHoldPiece();
@@ -140,11 +140,11 @@ private:
     bool   mouseControlEnabled = true;
     Screen currentScreen = Screen::Main;
 
-    int   autoPlaceWindow     = 3;
+    int   autoPlaceWindow     = 2;
     int   mouseMagnetRadius   = 0;
     float mouseFollowStrength = 0.35f;
     float mouseXAccumulator   = 0.0f;
-    float autoPlaceAnchorW    = 10.0f;
+    float autoPlaceAnchorW    = 2.0f;
 
     InputHandler inputHandler;
 
@@ -184,6 +184,18 @@ private:
     std::shared_ptr<UIButton> doneBtn;
     std::shared_ptr<UICheckbox> mouseControlCheckbox;
     std::shared_ptr<UICheckbox> soundCheckbox;
+
+    std::optional<Shape> plannedMouseLock;
+    bool plannedCoversTarget = false;
+    std::vector<Shape> computeReachableLocks(const Shape& start) const;
+    void planMousePlacement(int targetGridX, int targetGridY);
+    int  scorePlacement(const Shape& locked, int targetGridX, int targetGridY) const;
+    static int minYOf(const Shape& s);
+    static bool shapeCoversCell(const Shape& s, int gx, int gy);
+    void alignToPlannedLock();
+    void performHardDrop();
+
+    bool isCellReachable(int gridX, int gridY) const;
 
     static float clamp01(float v) { return v < 0.f ? 0.f : (v > 1.f ? 1.f : v); }
     static float easeOutQuad(float t) { return 1.f - (1.f - t) * (1.f - t); }

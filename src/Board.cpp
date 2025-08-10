@@ -55,19 +55,23 @@ void Board::initializeTexture(SDL_Renderer* renderer) {
 }
 
 bool Board::isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const {
-for (const auto& coord : coords) {
-    int x = coord.first + dx;
-    int y = coord.second + dy;
+    for (const auto& coord : coords) {
+        int x = coord.first + dx;
+        int y = coord.second + dy;
 
-    if (x < 0 || x >= cols || y < 0 || y >= rows) {
-        return true;
-    }
+        if (x < 0 || x >= cols || y >= rows) {
+            return true;
+        }
 
-    if (grid[y][x] != 0) {
-        return true;
+        if (y < 0) {
+            continue;
+        }
+
+        if (grid[y][x] != 0) {
+            return true;
+        }
     }
-}
-return false;
+    return false;
 }
 
 void Board::placeShape(const Shape& shape) {
@@ -402,4 +406,15 @@ void Board::updateAnimations() {
     updateLandingAnimations();
     updateHardDropAnimations();
     updateBubbleParticles();
+}
+
+bool Board::isCellReachable(int x, int y) const {
+    if (y < 0) return true;
+    
+    for (int i = y - 1; i >= 0; i--) {
+        if (grid[i][x] != 0) {
+            return false;
+        }
+    }
+    return true;
 }

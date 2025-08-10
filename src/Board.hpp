@@ -63,6 +63,7 @@ public:
     void updateBubbleParticles();
 
     Uint8 landingAlpha(int x, int y, Uint32 now) const;
+    bool isCellReachable(int x, int y) const;
 
     int  getRows() const;
     int  getCols() const;

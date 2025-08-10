@@ -1,4 +1,33 @@
 #include "Game.hpp"
+#include <array>
+
+namespace {
+struct CoordsKey {
+    std::array<int, 8> a{};
+    bool operator==(const CoordsKey& o) const noexcept { return a == o.a; }
+};
+
+inline CoordsKey makeKey(const Shape& s) {
+    std::array<std::pair<int,int>, 4> pts;
+    int i=0;
+    for (auto p : s.getCoords()) pts[i++] = p;
+    std::sort(pts.begin(), pts.end(), [](auto& L, auto& R){
+        if (L.second != R.second) return L.second < R.second;
+        return L.first < R.first;
+    });
+    CoordsKey k;
+    int j=0;
+    for (auto& p : pts) { k.a[j++] = p.first; k.a[j++] = p.second; }
+    return k;
+}
+struct KeyHash {
+    size_t operator()(const CoordsKey& k) const noexcept {
+        size_t h = 1469598103934665603ull;
+        for (int v : k.a) { h ^= std::hash<int>{}(v); h *= 1099511628211ull; }
+        return h;
+    }
+};
+}
 
 Game::Game(int windowWidth, int windowHeight, int cellSize)
     : board(20, 10, cellSize, {0, 0, 255, 255}),
@@ -402,6 +431,15 @@ void Game::processInput() {
     }
 
     Uint32 currentTime = SDL_GetTicks();
+    auto clearPlannerOnKeyboard = [&](){ plannedMouseLock.reset(); };
+    if (inputHandler.isKeyJustPressed(keyBindings[Action::MoveLeft])  ||
+        inputHandler.isKeyJustPressed(keyBindings[Action::MoveRight]) ||
+        inputHandler.isKeyJustPressed(keyBindings[Action::RotateLeft])||
+        inputHandler.isKeyJustPressed(keyBindings[Action::RotateRight]))
+    {
+        clearPlannerOnKeyboard();
+    }
+
     const Uint32 autoRepeatInitialDelay = 400;
     const Uint32 autoRepeatInterval = 100;
 
@@ -491,9 +529,20 @@ void Game::processInput() {
             const Uint32 intervalMs = 16;
             Uint32 now = SDL_GetTicks();
             if (now - lastAutoPlace >= intervalMs) {
+            if (!plannedMouseLock || !plannedCoversTarget) {
                 autoRotateCurrentShape(targetGridX, targetGridY);
-                lastAutoPlace = now;
             }
+            
+            planMousePlacement(targetGridX, targetGridY);
+            
+            if (plannedMouseLock && plannedCoversTarget) {
+                alignToPlannedLock();
+            }
+            
+            lastAutoPlace = now;
+        }
+        } else {
+            plannedMouseLock.reset();
         }
     }
 
@@ -522,28 +571,15 @@ void Game::processInput() {
     }
 
     if (inputHandler.isKeyJustPressed(keyBindings[Action::HardDrop])) {
-        int dropDistance = 0;
-        while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
-            currentShape.moveDown();
-            dropDistance++;
-        }
+        performHardDrop();
+        return;
+    }
 
-        board.placeShape(currentShape);
-        board.triggerHardDropAnim(currentShape);
-        if (soundEnabled) SoundManager::PlayDropSound();
+    if (mouseControlEnabled && inputHandler.isMouseClicked()) {
+        if (ignoreNextMouseClick) { ignoreNextMouseClick = false; return; }
 
-        int clearedLines = board.clearFullLines();
-        updateScore(clearedLines, dropDistance, true);
-
-        Uint32 now = SDL_GetTicks();
-        if (clearedLines > 0) {
-            board.clearStartTime = now;
-        } else {
-            spawnNewShape();
-            if (isGameOver()) return;
-        }
-
-        inputHandler.clearKeyState(SDLK_SPACE);
+        performHardDrop();
+        return;
     }
 
     if (currentScreen == Screen::Settings) {
@@ -552,46 +588,6 @@ void Game::processInput() {
             inputHandler.clearKeyState(SDLK_ESCAPE);
         }
         return;
-    }
-
-    if (mouseControlEnabled && inputHandler.isMouseClicked()) {
-        if (ignoreNextMouseClick) {
-            ignoreNextMouseClick = false;
-            return;
-        }
-
-        int dropDistance = 0;
-        while (!board.isOccupied(currentShape.getCoords(), 0, 1)) {
-            currentShape.moveDown();
-            dropDistance++;
-        }
-
-        board.placeShape(currentShape);
-        board.triggerHardDropAnim(currentShape);
-        if (soundEnabled) SoundManager::PlayDropSound();
-
-        int clearedLines = board.clearFullLines();
-        updateScore(clearedLines, dropDistance, true);
-
-        int basePoints = 0;
-        switch (clearedLines) {
-            case 1: basePoints = 40 * (level + 1); break;
-            case 2: basePoints = 100 * (level + 1); break;
-            case 3: basePoints = 300 * (level + 1); break;
-            case 4: basePoints = 1200 * (level + 1); break;
-            default: break;
-        }
-        if (clearedLines > 0) {
-            triggerScorePopup(clearedLines, basePoints);
-        }
-
-        Uint32 now = SDL_GetTicks();
-        if (clearedLines > 0) {
-            board.clearStartTime = now;
-        } else {
-            spawnNewShape();
-            if (isGameOver()) return;
-        }
     }
 
     if (inputHandler.isKeyJustPressed(keyBindings[Action::Hold])) {
@@ -703,9 +699,20 @@ void Game::render() {
     if (isPaused || currentScreen == Screen::Settings) {
         board.draw(renderer, 200, 10, false);
     } else {
+        const int boardOffsetX = 200;
+        const int boardOffsetY = 10;
+        int mouseX = inputHandler.getMouseX() - boardOffsetX;
+        int mouseY = inputHandler.getMouseY() - boardOffsetY;
+        int targetGridX = std::clamp(mouseX / cellSize, 0, board.getCols()-1);
+        int targetGridY = std::clamp(mouseY / cellSize, 0, board.getRows()-1);
         board.draw(renderer, 200, 10, !resumeCountdownActive);
         if (!resumeCountdownActive && !isGameOver() && !board.isClearingLines) {
-            shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
+            if (mouseControlEnabled && plannedMouseLock.has_value() && plannedCoversTarget) {
+                plannedMouseLock->draw(renderer, board.getCellSize(), 200, 10, true);
+            } else {
+                shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
+            }
+            
             currentShape.draw(renderer, board.getCellSize(), 200, 10);
         }
     }
@@ -813,6 +820,7 @@ bool Game::isGameOver() const {
 
 void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
 {
+    if (!isCellReachable(targetGridX, targetGridY)) return;
     constexpr int CONTACT_W  = 20;
     const int ANCHOR_W   = autoPlaceAnchorW;
     constexpr int STAB_W     = 15;
@@ -966,31 +974,33 @@ void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
 
 void Game::snapShapeHorizontally(int targetX)
 {
-    int minX = INT_MAX, maxX = INT_MIN;
-    for (auto &c : currentShape.coords) {
-        minX = std::min(minX, c.first);
-        maxX = std::max(maxX, c.first);
-    }
+    if (isCellReachable(targetX, board.getRows() - 1)) {
+        int minX = INT_MAX, maxX = INT_MIN;
+        for (auto &c : currentShape.coords) {
+            minX = std::min(minX, c.first);
+            maxX = std::max(maxX, c.first);
+        }
 
-    const int leftBias = (currentShape.getType() == Shape::Type::O) ? 1 : 0;
-    int desiredMinX = std::clamp(targetX - leftBias, 0, board.getCols() - (maxX - minX + 1));
-    int dx = desiredMinX - minX;
+        const int leftBias = (currentShape.getType() == Shape::Type::O) ? 1 : 0;
+        int desiredMinX = std::clamp(targetX - leftBias, 0, board.getCols() - (maxX - minX + 1));
+        int dx = desiredMinX - minX;
 
-    if (std::abs(dx) <= mouseMagnetRadius) return;
+        if (std::abs(dx) <= mouseMagnetRadius) return;
 
-    mouseXAccumulator += dx * mouseFollowStrength;
+        mouseXAccumulator += dx * mouseFollowStrength;
 
-    int steps = static_cast<int>(std::floor(std::abs(mouseXAccumulator)));
-    if (steps <= 0) return;
+        int steps = static_cast<int>(std::floor(std::abs(mouseXAccumulator)));
+        if (steps <= 0) return;
 
-    int dir = (mouseXAccumulator > 0.0f) ? 1 : -1;
-    for (int i = 0; i < steps; ++i) {
-        if (!board.isOccupied(currentShape.getCoords(), dir, 0)) {
-            for (auto &c : currentShape.coords) c.first += dir;
-            mouseXAccumulator -= dir;
-        } else {
-            mouseXAccumulator = 0.0f;
-            break;
+        int dir = (mouseXAccumulator > 0.0f) ? 1 : -1;
+        for (int i = 0; i < steps; ++i) {
+            if (!board.isOccupied(currentShape.getCoords(), dir, 0)) {
+                for (auto &c : currentShape.coords) c.first += dir;
+                mouseXAccumulator -= dir;
+            } else {
+                mouseXAccumulator = 0.0f;
+                break;
+            }
         }
     }
 }
@@ -1472,7 +1482,7 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
 }
 
 
-int Game::countContactSegments(const Shape& shape, const Board& board)
+int Game::countContactSegments(const Shape& shape, const Board& board) const
 {
     const auto& coords = shape.getCoords();
     const auto& grid   = board.getGrid();
@@ -1699,4 +1709,211 @@ void Game::triggerLevelUpPopup() {
         0u,
         1200u
     });
+}
+
+int Game::minYOf(const Shape& s) {
+    int my = INT_MAX;
+    for (auto& c : s.getCoords()) my = std::min(my, c.second);
+    return (my == INT_MAX) ? 0 : my;
+}
+bool Game::shapeCoversCell(const Shape& s, int gx, int gy) {
+    for (auto& c : s.getCoords()) if (c.first == gx && c.second == gy) return true;
+    return false;
+}
+
+std::vector<Shape> Game::computeReachableLocks(const Shape& start) const {
+    const auto& grid = board.getGrid();
+    const int rows = board.getRows(), cols = board.getCols();
+
+    std::vector<Shape> layer;
+    layer.push_back(start);
+
+    std::unordered_set<CoordsKey, KeyHash> globallySeen;
+    globallySeen.insert(makeKey(start));
+
+    std::vector<Shape> locks;
+
+    while (!layer.empty()) {
+        std::deque<Shape> q(layer.begin(), layer.end());
+        std::unordered_set<CoordsKey, KeyHash> closureSeen;
+        std::vector<Shape> closure;
+        while (!q.empty()) {
+            Shape s = q.front(); q.pop_front();
+            CoordsKey k = makeKey(s);
+            if (!closureSeen.insert(k).second) continue;
+            closure.push_back(s);
+
+            if (!board.isOccupied(s.getCoords(), -1, 0)) {
+                Shape t = s; t.moveLeft(); if (!closureSeen.count(makeKey(t))) q.push_back(t);
+            }
+            if (!board.isOccupied(s.getCoords(), +1, 0)) {
+                Shape t = s; t.moveRight(cols); if (!closureSeen.count(makeKey(t))) q.push_back(t);
+            }
+            {
+                Shape t = s; t.rotateClockwise(grid, cols, rows);
+                if (!closureSeen.count(makeKey(t))) q.push_back(t);
+            }
+            {
+                Shape t = s; t.rotateCounterClockwise(grid, cols, rows);
+                if (!closureSeen.count(makeKey(t))) q.push_back(t);
+            }
+        }
+
+        std::vector<Shape> nextLayer;
+        for (auto& s : closure) {
+            if (board.isOccupied(s.getCoords(), 0, 1)) {
+                CoordsKey lk = makeKey(s);
+                if (!globallySeen.count(lk)) {
+                    globallySeen.insert(lk);
+                    locks.push_back(s);
+                }
+            } else {
+                Shape d = s; d.moveDown();
+                CoordsKey dk = makeKey(d);
+                if (globallySeen.insert(dk).second) nextLayer.push_back(d);
+            }
+        }
+        layer.swap(nextLayer);
+    }
+    return locks;
+}
+
+int Game::scorePlacement(const Shape& locked, int targetGridX, int targetGridY) const {
+    const int rows = board.getRows(), cols = board.getCols();
+    const auto& G  = board.getGrid();
+
+    static std::vector<std::vector<int>> scratch;
+    scratch.assign(rows, std::vector<int>(cols, 0));
+    for (int r=0;r<rows;++r) for (int c=0;c<cols;++c) scratch[r][c] = (G[r][c] ? 1 : 0);
+    for (auto& p : locked.getCoords())
+        if (p.second>=0 && p.second<rows && p.first>=0 && p.first<cols) scratch[p.second][p.first] = 1;
+
+    int cleared = 0;
+    for (int r=0;r<rows;++r) {
+        bool full=true; for (int c=0;c<cols;++c) if (!scratch[r][c]) { full=false; break; }
+        if (full) ++cleared;
+    }
+
+    int aggregate=0, holes=0, bump=0;
+    std::vector<int> h(cols,0);
+    for (int c=0;c<cols;++c){
+        for (int r=0;r<rows;++r){ if (scratch[r][c]) { h[c]=rows-r; aggregate+=h[c]; break; } }
+    }
+    for (int c=0;c<cols;++c){
+        bool seen=false;
+        for (int r=0;r<rows;++r){
+            if (scratch[r][c]) seen=true; else if (seen) ++holes;
+        }
+    }
+    for (int c=0;c<cols-1;++c) bump += std::abs(h[c]-h[c+1]);
+
+    int contacts = countContactSegments(locked, board);
+
+    int fmin=cols, fmax=-1, centreX=0, minY=rows;
+    for (auto& p : locked.getCoords()) {
+        fmin = std::min(fmin, p.first);
+        fmax = std::max(fmax, p.first);
+        centreX += p.first;
+        minY = std::min(minY, p.second);
+    }
+    centreX /= (int)locked.getCoords().size();
+
+    int rawDist = 0;
+    if (targetGridX < fmin) rawDist = fmin - targetGridX;
+    else if (targetGridX > fmax) rawDist = targetGridX - fmax;
+
+    constexpr int CONTACT_W  = 20;
+    const     int ANCHOR_W   = (int)autoPlaceAnchorW;
+    constexpr int STAB_W     = 15;
+    constexpr int ANCHOR_CAP = 2;
+    constexpr int FILL_BONUS = 200;
+
+    int anchorDist = std::max(0, rawDist - 1);
+    anchorDist     = std::min(anchorDist, ANCHOR_CAP);
+    int anchorPen = -ANCHOR_W * anchorDist;
+
+    bool fillsTarget = (targetGridY >= 0) && shapeCoversCell(locked, targetGridX, targetGridY);
+    int yAlignBonus  = (targetGridY >= 0) ? -std::abs(minY - targetGridY) * 5 : 0;
+
+    int score =
+          cleared      * 1000
+        + aggregate    *   -7
+        + holes        * -120
+        + bump         *   -4
+        + contacts     *  CONTACT_W
+        + anchorPen
+        + (fillsTarget ? FILL_BONUS : 0)
+        + yAlignBonus;
+
+    score -= std::max(0, std::abs(centreX - targetGridX) - 1);
+    return score;
+}
+
+void Game::planMousePlacement(int targetGridX, int targetGridY) {
+    plannedMouseLock.reset();
+    plannedCoversTarget = false;
+    
+    auto locks = computeReachableLocks(currentShape);
+    if (locks.empty()) return;
+
+    int bestScore = std::numeric_limits<int>::min();
+    int bestIdx   = -1;
+    for (int i = 0; i < (int)locks.size(); ++i) {
+        int s = scorePlacement(locks[i], targetGridX, targetGridY);
+        if (s > bestScore) { 
+            bestScore = s; 
+            bestIdx = i; 
+        }
+    }
+    
+    if (bestIdx >= 0) {
+        plannedMouseLock = locks[bestIdx];
+        plannedCoversTarget = shapeCoversCell(*plannedMouseLock, targetGridX, targetGridY);
+    }
+}
+
+void Game::alignToPlannedLock() {
+    if (!plannedMouseLock) return;
+
+    Shape s = *plannedMouseLock;
+
+    int dy = minYOf(currentShape) - minYOf(s);
+    for (auto& p : s.coords) p.second += dy;
+
+    if (board.isOccupied(s.getCoords(), 0, 0)) return;
+
+    currentShape = s;
+}
+
+void Game::performHardDrop() {
+    Shape placed = currentShape;
+    if (mouseControlEnabled && plannedMouseLock.has_value() && plannedCoversTarget) {
+        placed = *plannedMouseLock;
+    } else {
+        while (!board.isOccupied(placed.getCoords(), 0, 1)) {
+            placed.moveDown();
+        }
+    }
+
+    const int dropDistance = std::max(0, minYOf(placed) - minYOf(currentShape));
+
+    board.placeShape(placed);
+    board.triggerHardDropAnim(placed);
+    if (soundEnabled) SoundManager::PlayDropSound();
+
+    const int clearedLines = board.clearFullLines();
+    updateScore(clearedLines, dropDistance, true);
+
+    if (clearedLines > 0) {
+        board.clearStartTime = SDL_GetTicks();
+    } else {
+        spawnNewShape();
+    }
+
+    lastMoveTime = SDL_GetTicks();
+    plannedMouseLock.reset();
+}
+
+bool Game::isCellReachable(int gridX, int gridY) const {
+    return board.isCellReachable(gridX, gridY);
 }

@@ -81,6 +81,7 @@ void Shape::rotateClockwise(const std::vector<std::vector<int>>& board, int boar
             coords[i].first = rotatedCoords[i].first + dx;
         }
         if (isValidPosition(board, boardWidth, boardHeight)) {
+            rotationState = (rotationState + 1) % 4;
             return;
         }
         coords = rotatedCoords;
@@ -90,28 +91,35 @@ void Shape::rotateClockwise(const std::vector<std::vector<int>>& board, int boar
     rotationState = oldRotationState;
 }
 
-void Shape::rotateCounterClockwise(const std::vector<std::vector<int>>& grid, int cols, int rows) {
-    auto newCoords = coords;
-    auto pivot = coords[0];
+void Shape::rotateCounterClockwise(const std::vector<std::vector<int>>& board, int boardWidth, int boardHeight) {
+    if (type == Type::O) return;
 
-    for (auto& p : newCoords) {
-        int x = p.first - pivot.first;
-        int y = p.second - pivot.second;
+    std::vector<std::pair<int, int>> preRotationCoords = coords;
+    int oldRotationState = rotationState;
 
-        int rotatedX = y;
-        int rotatedY = -x;
+    rotateShape(-1);
 
-        p.first = pivot.first + rotatedX;
-        p.second = pivot.second + rotatedY;
+    if (isValidPosition(board, boardWidth, boardHeight)) return;
+
+    std::vector<std::pair<int, int>> rotatedCoords = coords;
+    std::vector<int> kickOffsets = {1, -1, 2, -2};
+
+    for (int dx : kickOffsets) {
+        for (size_t i = 0; i < coords.size(); ++i) {
+            coords[i].first = rotatedCoords[i].first + dx;
+        }
+        if (isValidPosition(board, boardWidth, boardHeight)) {
+            rotationState = (rotationState + 3) % 4;
+            return;
+        }
+        coords = rotatedCoords;
     }
 
-    for (const auto& p : newCoords) {
-        if (p.first < 0 || p.first >= cols || p.second < 0 || p.second >= rows) return;
-        if (grid[p.second][p.first] != 0) return;
-    }
-
-    coords = newCoords;
+    coords = preRotationCoords;
+    rotationState = oldRotationState;
 }
+
+
 
 void Shape::rotateShape(int direction) {
     auto pivot = coords[0];
