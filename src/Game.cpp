@@ -1597,6 +1597,7 @@ void Game::triggerScorePopup(int clearedLines, int linePoints) {
     const int pointsYOffset = +6;
 
     const SDL_Color white = {255, 255, 255, 255};
+    TTF_Font* scoreFont = (fontMedium ? fontMedium : fontDefault);
 
     std::string label;
     switch (clearedLines) {
@@ -1609,12 +1610,12 @@ void Game::triggerScorePopup(int clearedLines, int linePoints) {
     Uint32 now = SDL_GetTicks();
 
     scorePopups.push_back(ScorePopup{
-        label, white, cx, cy + labelYOffset, rise, now, 0, dur
+        label, white, cx, cy + labelYOffset, rise, now, 0, dur, 1.0f, scoreFont
     });
 
     scorePopups.push_back(ScorePopup{
         std::string("+") + std::to_string(linePoints),
-        white, cx, cy + pointsYOffset, rise, now, 60, dur
+        white, cx, cy + pointsYOffset, rise, now, 60, dur, 1.0f, scoreFont
     });
 
 }
@@ -1649,19 +1650,14 @@ void Game::renderScorePopups() {
         float aOut = (t > 0.75f) ? clamp01(1.f - (t - 0.75f) / 0.25f) : 1.f;
         Uint8 alpha = Uint8(255 * aIn * aOut);
 
-        TTF_Font* useFont = (fontMedium ? fontMedium : fontDefault);
+        TTF_Font* useFont = p.font ? p.font : (fontMedium ? fontMedium : fontDefault);
         float sAnim = 0.92f + 0.08f * easeOutQuad(std::min(t / 0.2f, 1.f));
         float s = sAnim;
 
-        if (p.text == "Level up!") {
-            if (fontLarge) useFont = fontLarge;
-            s *= 1.8f;
-        }
+        if (p.text == "Level up!") s *= 1.3f;
 
         SDL_Color col = p.color; 
         col.a = alpha;
-
-        useFont = (fontMedium ? fontMedium : fontDefault);
         renderTextCenteredScaled(p.text, int(p.x), int(y), col, s, useFont);
     }
 }
@@ -1673,6 +1669,8 @@ void Game::triggerLevelUpPopup() {
     const float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
     const float cy = boardOffsetY + board.getCellSize() * 5.5f;
 
+    TTF_Font* levelFont = (fontMedium ? fontMedium : fontDefault);
+
     scorePopups.push_back(ScorePopup{
         "Level up!",
         SDL_Color{255,255,255,255},
@@ -1681,7 +1679,9 @@ void Game::triggerLevelUpPopup() {
         80.0f,
         SDL_GetTicks(),
         0u,
-        1200u
+        1200u,
+        1.0f,
+        levelFont
     });
 }
 

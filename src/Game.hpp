@@ -54,6 +54,7 @@ private:
         Uint32      delay;
         Uint32      duration;
         float       scale = 1.0f;
+        TTF_Font*   font  = nullptr;
     };
 
     struct UI {
