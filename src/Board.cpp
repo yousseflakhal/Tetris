@@ -4,8 +4,7 @@
 Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor)
     : rows(rows), cols(cols), cellSize(cellSize), backgroundColor(backgroundColor),
       grid(rows, std::vector<int>(cols, 0)),
-      colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0}))
-{
+      colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0})) {
     whiteCellTexture = nullptr;
 }
 
@@ -16,7 +15,7 @@ Board::~Board() {
     }
 }
 
-void Board::initializeTexture(SDL_Renderer* renderer) {
+void Board::initializeTexture(SDL_Renderer* renderer) const {
     if (whiteCellTexture) {
         SDL_DestroyTexture(whiteCellTexture);
         whiteCellTexture = nullptr;
@@ -123,7 +122,7 @@ int Board::clearFullLines() {
 
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const {
     if (!whiteCellTexture) {
-        const_cast<Board*>(this)->initializeTexture(renderer);
+        initializeTexture(renderer);
     }
     const int boardWidth = cols * cellSize;
     const int boardHeight = rows * cellSize;
@@ -156,21 +155,9 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                     float rotation = 360.0f * progress;
                     SDL_Rect destRect = {cellX, cellY, cellDrawSize, cellDrawSize};
 
-                    if (!whiteCellTexture) {
-                        SDL_Texture* tempTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, cellDrawSize, cellDrawSize);
-                        SDL_SetTextureBlendMode(tempTexture, SDL_BLENDMODE_BLEND);
-                        SDL_SetRenderTarget(renderer, tempTexture);
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-                        SDL_RenderClear(renderer);
-                        draw_smooth_rounded_rect(renderer, 0, 0, cellDrawSize, cellDrawSize, 2, color, true);
-                        SDL_SetRenderTarget(renderer, nullptr);
-                        SDL_RenderCopyEx(renderer, tempTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
-                        SDL_DestroyTexture(tempTexture);
-                    } else {
-                        SDL_SetTextureColorMod(whiteCellTexture, color.r, color.g, color.b);
-                        SDL_SetTextureAlphaMod(whiteCellTexture, alpha);
-                        SDL_RenderCopyEx(renderer, whiteCellTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
-                    }
+                    SDL_SetTextureColorMod(whiteCellTexture, color.r, color.g, color.b);
+                    SDL_SetTextureAlphaMod(whiteCellTexture, alpha);
+                    SDL_RenderCopyEx(renderer, whiteCellTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
                 } else {
                     SDL_Color borderColor = darker(color, 0.55f);
                     draw_tetris_cell(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 6, 1, 2, color, borderColor);

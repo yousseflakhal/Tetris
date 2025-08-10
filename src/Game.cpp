@@ -35,8 +35,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
       shadowShape(currentShape),
       cellSize(cellSize),
       windowWidth(windowWidth),
-      windowHeight(windowHeight)
-{
+      windowHeight(windowHeight) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL Initialization failed");
 
@@ -510,8 +509,8 @@ void Game::processInput() {
     }
 
     {
-        const int boardOffsetX = 200;
-        const int boardOffsetY = 10;
+        const int boardOffsetX = UI::BoardOffsetX;
+        const int boardOffsetY = UI::BoardOffsetY;
         int mouseX = inputHandler.getMouseX() - boardOffsetX;
         int mouseY = inputHandler.getMouseY() - boardOffsetY;
 
@@ -660,18 +659,6 @@ void Game::update() {
             int clearedLines = board.clearFullLines();
             updateScore(clearedLines, 0, false);
 
-            int basePoints = 0;
-            switch (clearedLines) {
-                case 1: basePoints = 40 * (level + 1); break;
-                case 2: basePoints = 100 * (level + 1); break;
-                case 3: basePoints = 300 * (level + 1); break;
-                case 4: basePoints = 1200 * (level + 1); break;
-                default: break;
-            }
-            if (clearedLines > 0) {
-                triggerScorePopup(clearedLines, basePoints);
-            }
-
             if (clearedLines > 0) {
                 board.clearStartTime = currentTime;
             } else {
@@ -697,23 +684,17 @@ void Game::render() {
     }
 
     if (isPaused || currentScreen == Screen::Settings) {
-        board.draw(renderer, 200, 10, false);
+        board.draw(renderer, UI::BoardOffsetX, UI::BoardOffsetY, false);
     } else {
-        const int boardOffsetX = 200;
-        const int boardOffsetY = 10;
-        int mouseX = inputHandler.getMouseX() - boardOffsetX;
-        int mouseY = inputHandler.getMouseY() - boardOffsetY;
-        int targetGridX = std::clamp(mouseX / cellSize, 0, board.getCols()-1);
-        int targetGridY = std::clamp(mouseY / cellSize, 0, board.getRows()-1);
-        board.draw(renderer, 200, 10, !resumeCountdownActive);
+        board.draw(renderer, UI::BoardOffsetX, UI::BoardOffsetY, !resumeCountdownActive);
         if (!resumeCountdownActive && !isGameOver() && !board.isClearingLines) {
             if (mouseControlEnabled && plannedMouseLock.has_value() && plannedCoversTarget) {
-                plannedMouseLock->draw(renderer, board.getCellSize(), 200, 10, true);
+                plannedMouseLock->draw(renderer, board.getCellSize(), UI::BoardOffsetX, UI::BoardOffsetY, true);
             } else {
-                shadowShape.draw(renderer, board.getCellSize(), 200, 10, true);
+                shadowShape.draw(renderer, board.getCellSize(), UI::BoardOffsetX, UI::BoardOffsetY, true);
             }
             
-            currentShape.draw(renderer, board.getCellSize(), 200, 10);
+            currentShape.draw(renderer, board.getCellSize(), UI::BoardOffsetX, UI::BoardOffsetY);
         }
     }
 
@@ -818,8 +799,7 @@ bool Game::isGameOver() const {
 }
 
 
-void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
-{
+void Game::autoRotateCurrentShape(int targetGridX, int targetGridY) {
     if (!isCellReachable(targetGridX, targetGridY)) return;
     constexpr int CONTACT_W  = 20;
     const int ANCHOR_W   = autoPlaceAnchorW;
@@ -972,8 +952,7 @@ void Game::autoRotateCurrentShape(int targetGridX, int targetGridY)
 }
 
 
-void Game::snapShapeHorizontally(int targetX)
-{
+void Game::snapShapeHorizontally(int targetX) {
     if (isCellReachable(targetX, board.getRows() - 1)) {
         int minX = INT_MAX, maxX = INT_MIN;
         for (auto &c : currentShape.coords) {
@@ -1121,8 +1100,7 @@ void Game::checkLevelUp() {
     }
 }
 
-void Game::updateScore(int clearedLines,int dropDistance, bool hardDrop)
-{
+void Game::updateScore(int clearedLines,int dropDistance, bool hardDrop) {
     if (clearedLines > 0) {
         totalLinesCleared += clearedLines;
         if (soundEnabled) SoundManager::PlayClearSound();
@@ -1482,8 +1460,7 @@ void Game::renderInfoCard(int x, int y, int width, int height, int radius,
 }
 
 
-int Game::countContactSegments(const Shape& shape, const Board& board) const
-{
+int Game::countContactSegments(const Shape& shape, const Board& board) const {
     const auto& coords = shape.getCoords();
     const auto& grid   = board.getGrid();
     const int   rows   = board.getRows();
@@ -1555,8 +1532,7 @@ float Game::countdownScale(Uint32 msInSecond) const {
 }
 
 void Game::renderTextCenteredScaled(const std::string& text, int cx, int cy,
-                                    SDL_Color color, float scale, TTF_Font* useFont)
-{
+                                    SDL_Color color, float scale, TTF_Font* useFont) {
     if (!useFont || text.empty()) return;
 
     SDL_Surface* surf = TTF_RenderText_Blended(useFont, text.c_str(), color);
@@ -1602,8 +1578,8 @@ void Game::renderTextCenteredScaled(const std::string& text, int cx, int cy,
 void Game::triggerScorePopup(int clearedLines, int linePoints) {
     if (clearedLines <= 0) return;
 
-    const int boardOffsetX = 200;
-    const int boardOffsetY = 10;
+    const int boardOffsetX = UI::BoardOffsetX;
+    const int boardOffsetY = UI::BoardOffsetY;
     float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
 
     float avgRow = 0.f;
@@ -1691,13 +1667,11 @@ void Game::renderScorePopups() {
 }
 
 void Game::triggerLevelUpPopup() {
-    const int boardOffsetX = 200;
-    const int boardOffsetY = 10;
+    const int boardOffsetX = UI::BoardOffsetX;
+    const int boardOffsetY = UI::BoardOffsetY;
 
     const float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
     const float cy = boardOffsetY + board.getCellSize() * 5.5f;
-
-    Uint32 now = SDL_GetTicks();
 
     scorePopups.push_back(ScorePopup{
         "Level up!",
@@ -1824,7 +1798,6 @@ int Game::scorePlacement(const Shape& locked, int targetGridX, int targetGridY) 
 
     constexpr int CONTACT_W  = 20;
     const     int ANCHOR_W   = (int)autoPlaceAnchorW;
-    constexpr int STAB_W     = 15;
     constexpr int ANCHOR_CAP = 2;
     constexpr int FILL_BONUS = 200;
 

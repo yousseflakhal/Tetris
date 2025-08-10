@@ -2,7 +2,7 @@
 using namespace std;
 
 Shape::Shape(Type type, int startX, int startY, SDL_Color color)
-    : type(type), color(color), rotationState(0) {
+    : rotationState(0), type(type), color(color){
     coords = getDefaultCoordsForType(type);
 
     for (auto& coord : coords) {

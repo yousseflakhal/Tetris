@@ -60,8 +60,7 @@ void drawCardWithBorder(SDL_Renderer* renderer,
                         int radius,
                         SDL_Color bgColor,
                         SDL_Color borderColor,
-                        int borderThickness = 2)
-{
+                        int borderThickness = 2) {
     draw_smooth_rounded_rect(
         renderer,
         x, y,
@@ -87,8 +86,7 @@ void drawCardWithBorder(SDL_Renderer* renderer,
 void draw_smooth_rounded_rect(SDL_Renderer* renderer,
                               int x, int y, int w, int h,
                               int radius, SDL_Color color,
-                              bool filled, int borderThickness) 
-{
+                              bool filled, int borderThickness) {
     SDL_BlendMode original_mode;
     SDL_GetRenderDrawBlendMode(renderer, &original_mode);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -167,8 +165,7 @@ SDL_Color darker(SDL_Color c, float factor) {
 }
 
 template <typename PixelFunc>
-void draw_rounded_corners(int x, int y, int w, int h, int radius, PixelFunc&& pixelFunc)
-{
+void draw_rounded_corners(int x, int y, int w, int h, int radius, PixelFunc&& pixelFunc) {
     const int centers[4][2] = {
         {x + radius, y + radius},
         {x + w - radius, y + radius},
@@ -197,8 +194,7 @@ void draw_rounded_corners(int x, int y, int w, int h, int radius, PixelFunc&& pi
     }
 }
 
-void fill_solid_rounded_rect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color)
-{
+void fill_solid_rounded_rect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color) {
     SDLBlendGuard _guard(renderer);
     SDL_Rect center = {x + radius, y, w - 2 * radius, h};
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -226,8 +222,7 @@ inline void compute_gradient_color(int px, int py, int centerX, int centerY, flo
     b = static_cast<Uint8>(start.b * (1 - ratio) + end.b * ratio);
 }
 
-void fill_gradient_rounded_rect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color)
-{
+void fill_gradient_rounded_rect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color) {
     SDLBlendGuard _guard(renderer);
 
     SDL_Color centerColor = { 
@@ -271,8 +266,7 @@ void fill_gradient_rounded_rect(SDL_Renderer* renderer, int x, int y, int w, int
 }
 
 void draw_rounded_rect_border(SDL_Renderer* renderer, int x, int y, int w, int h,
-                              int radius, int borderThickness, SDL_Color color)
-{
+                              int radius, int borderThickness, SDL_Color color) {
     SDLBlendGuard _guard(renderer);
     int innerRadius = radius - borderThickness;
     draw_rounded_corners(x, y, w, h, radius, [&](int px, int py, float alpha_frac) {
@@ -308,8 +302,7 @@ void draw_rounded_rect_border(SDL_Renderer* renderer, int x, int y, int w, int h
 void draw_tetris_cell(SDL_Renderer* renderer,
                       int x, int y, int w, int h,
                       int radius, int margin, int borderThickness,
-                      SDL_Color outerColor, SDL_Color borderColor)
-{
+                      SDL_Color outerColor, SDL_Color borderColor) {
     fill_solid_rounded_rect(renderer, x, y, w, h, radius, outerColor);
 
     int borderX = x + margin;
@@ -333,8 +326,7 @@ void draw_tetris_cell(SDL_Renderer* renderer,
 
 void draw_smooth_parabolic_highlight_arc(SDL_Renderer* renderer,
                                          int x, int y, int w, int h,
-                                         int margin, int borderThickness)
-{
+                                         int margin, int borderThickness) {
     int gradX = x + margin + borderThickness;
     int gradY = y + margin + borderThickness;
     int gradW = w - 2 * (margin + borderThickness);
@@ -391,8 +383,7 @@ void draw_smooth_parabolic_highlight_arc(SDL_Renderer* renderer,
 
 void draw_preview_block(SDL_Renderer* r,
                                int x, int y, int w, int h,
-                               SDL_Color baseCol)
-{
+                               SDL_Color baseCol) {
     SDL_Color borderCol = darker(baseCol, 0.55f);
     constexpr int radius          = 4;
     constexpr int margin          = 1;
