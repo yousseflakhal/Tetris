@@ -14,6 +14,7 @@ Board::~Board() {
 }
 
 void Board::initializeTexture(SDL_Renderer* renderer) const {
+    if (cellSize <= 2) return;
     if (whiteCellTexture) {
         SDL_DestroyTexture(whiteCellTexture);
         whiteCellTexture = nullptr;
