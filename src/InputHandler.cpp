@@ -8,17 +8,11 @@ void InputHandler::beginFrame() {
     keysJustPressed.clear();
 }
 void InputHandler::handleEvent(const SDL_Event &event) {
-    if (event.type == SDL_KEYDOWN && !event.key.repeat) {
-        keyStates[event.key.keysym.sym] = true;
-        keysJustPressed.insert(event.key.keysym.sym);
-    }
     if (event.type == SDL_KEYDOWN) {
-        if (!event.key.repeat) {
-            keyStates[event.key.keysym.sym] = true;
-            keyRepeatStates[event.key.keysym.sym] = false;
-        } else {
-            keyRepeatStates[event.key.keysym.sym] = true;
-        }
+        const auto key = event.key.keysym.sym;
+        keyStates[key] = true;
+        keyRepeatStates[key] = event.key.repeat;
+        if (!event.key.repeat) keysJustPressed.insert(key);
     } else if (event.type == SDL_KEYUP) {
         keyStates[event.key.keysym.sym] = false;
         keyRepeatStates[event.key.keysym.sym] = false;
