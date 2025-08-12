@@ -792,7 +792,7 @@ void Game::render() {
 
 
 
-bool Game::isGameOver() const {
+bool Game::isGameOver() const noexcept {
     if (board.isClearingLines) return false;
     return board.isOccupied(currentShape.getCoords(), 0, 0);
 }
@@ -1400,7 +1400,7 @@ void Game::renderSettingsScreen() {
 }
 
 
-Uint32 Game::getElapsedGameTime() const {
+Uint32 Game::getElapsedGameTime() const noexcept {
     if (gameStartTime == 0) {
         return 0;
     }
@@ -1503,15 +1503,15 @@ int Game::countContactSegments(const Shape& shape, const Board& board) const {
 }
 
 
-float Game::easeOutCubic(float t) {
+float Game::easeOutCubic(float t) noexcept {
     return 1.0f - std::pow(1.0f - t, 3.0f);
 }
 
-float Game::easeInOutQuad(float t) {
+float Game::easeInOutQuad(float t) noexcept {
     return (t < 0.5f) ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) * 0.5f;
 }
 
-float Game::countdownScale(Uint32 msInSecond) const {
+float Game::countdownScale(Uint32 msInSecond) const noexcept {
     const float growDur   = 550.0f;
     const float holdDur   = 200.0f;
     const float settleDur = 250.0f;
@@ -1688,12 +1688,12 @@ void Game::triggerLevelUpPopup() {
     });
 }
 
-int Game::minYOf(const Shape& s) {
+int Game::minYOf(const Shape& s) noexcept {
     int my = INT_MAX;
     for (auto& c : s.getCoords()) my = std::min(my, c.second);
     return (my == INT_MAX) ? 0 : my;
 }
-bool Game::shapeCoversCell(const Shape& s, int gx, int gy) {
+bool Game::shapeCoversCell(const Shape& s, int gx, int gy) noexcept {
     for (auto& c : s.getCoords()) if (c.first == gx && c.second == gy) return true;
     return false;
 }

@@ -68,7 +68,7 @@ private:
     void render();
 
     void spawnNewShape();
-    bool isGameOver() const;
+    bool isGameOver() const noexcept;
 
     void autoRotateCurrentShape(int targetGridX, int targetGridY = -1);
     void snapShapeHorizontally(int targetGridX);
@@ -90,11 +90,11 @@ private:
     void   updateSpeed();
     void   resetGame();
     void   holdPiece();
-    Uint32 getElapsedGameTime() const;
+    Uint32 getElapsedGameTime() const noexcept;
 
-    float       countdownScale(Uint32 msInSecond) const;
-    static float easeOutCubic(float t);
-    static float easeInOutQuad(float t);
+    float       countdownScale(Uint32 msInSecond) const noexcept;
+    static float easeOutCubic(float t) noexcept;
+    static float easeInOutQuad(float t) noexcept;
 
     void triggerScorePopup(int clearedLines, int linePoints);
     void triggerLevelUpPopup();
@@ -207,16 +207,16 @@ private:
     void               planMousePlacement(int targetGridX, int targetGridY);
     int                scorePlacement(const Shape& locked, int targetGridX, int targetGridY) const;
 
-    static int   minYOf(const Shape& s);
-    static bool  shapeCoversCell(const Shape& s, int gx, int gy);
+    static int   minYOf(const Shape& s) noexcept;
+    static bool  shapeCoversCell(const Shape& s, int gx, int gy) noexcept;
     void         alignToPlannedLock();
     void         performHardDrop();
 
     bool isCellReachable(int gridX, int gridY) const;
 
-    static float clamp01(float v)     { return v < 0.f ? 0.f : (v > 1.f ? 1.f : v); }
-    static float easeOutQuad(float t) { return 1.f - (1.f - t) * (1.f - t); }
-    static float popupScale(float t) {
+    static float clamp01(float v) noexcept     { return v < 0.f ? 0.f : (v > 1.f ? 1.f : v); }
+    static float easeOutQuad(float t) noexcept { return 1.f - (1.f - t) * (1.f - t); }
+    static float popupScale(float t) noexcept  {
         const float grow   = 0.30f, hold = 0.15f, settle = 0.55f;
         const float s0     = 0.65f, sOver = 1.25f, sEnd = 1.0f;
         if (t < grow) {

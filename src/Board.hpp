@@ -52,13 +52,13 @@ public:
     void initializeTexture(SDL_Renderer* renderer) const;
     void draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const;
 
-    bool  isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const;
+    bool  isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const noexcept;
     void  placeShape(const Shape& shape);
     int   clearFullLines();
     void  finalizeLineClear();
     void  clearBoard();
-    Uint8 landingAlpha(int x, int y, Uint32 now) const;
-    bool  isCellReachable(int x, int y) const;
+    Uint8 landingAlpha(int x, int y, Uint32 now) const noexcept;
+    bool  isCellReachable(int x, int y) const noexcept;
 
     void updateAnimations();
     void updateLandingAnimations();
@@ -66,11 +66,11 @@ public:
     void updateBubbleParticles();
     void triggerHardDropAnim(const Shape& shape);
 
-    int  getRows() const;
-    int  getCols() const;
-    int  getCellSize() const;
-    const std::vector<std::vector<int>>& getGrid() const;
-    const std::vector<int>&              getLinesToClear() const;
+    int  getRows() const noexcept;
+    int  getCols() const noexcept;
+    int  getCellSize() const noexcept;
+    const std::vector<std::vector<int>>& getGrid() const noexcept;
+    const std::vector<int>&              getLinesToClear() const noexcept;
 
     int  countFullLines() const;
     int  countHoles() const;

@@ -28,28 +28,28 @@ void InputHandler::handleEvent(const SDL_Event &event) {
     }
 }
 
-bool InputHandler::isKeyPressed(SDL_Keycode key) const {
+bool InputHandler::isKeyPressed(SDL_Keycode key) const noexcept {
     auto it = keyStates.find(key);
     return it != keyStates.end() && it->second;
 }
 
-bool InputHandler::isQuitRequested() const {
+bool InputHandler::isQuitRequested() const noexcept {
     return quitRequested;
 }
 
-bool InputHandler::isKeyJustPressed(SDL_Keycode key) const {
+bool InputHandler::isKeyJustPressed(SDL_Keycode key) const noexcept {
     return keysJustPressed.find(key) != keysJustPressed.end();
 }
 
-int InputHandler::getMouseX() const {
+int InputHandler::getMouseX() const noexcept {
     return mouseX;
 }
 
-int InputHandler::getMouseY() const {
+int InputHandler::getMouseY() const noexcept {
     return mouseY;
 }
 
-bool InputHandler::isMouseClicked() const {
+bool InputHandler::isMouseClicked() const noexcept {
     return mouseClicked;
 }
 

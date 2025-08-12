@@ -20,7 +20,7 @@ void drawAACircle(SDL_Renderer* renderer, int cx, int cy, int radius, SDL_Color 
 void drawUIMenuRoundedRect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color, Uint8 alpha);
 void drawCardWithBorder(SDL_Renderer* renderer,int x, int y, int w, int h, int radius, SDL_Color bgColor, SDL_Color borderColor, int borderThickness);
 void draw_smooth_rounded_rect(SDL_Renderer* renderer,int x, int y, int w, int h,int radius, SDL_Color color,bool filled = true, int borderThickness = 1);
-SDL_Color darker(SDL_Color c, float factor = 0.55f);
+SDL_Color darker(SDL_Color c, float factor = 0.55f) noexcept;
 void draw_rounded_corners(int x, int y, int w, int h, int radius,
                           std::function<void(int, int, float)> pixelFunc);
 void fill_solid_rounded_rect(SDL_Renderer* renderer, int x, int y, int w, int h, int radius, SDL_Color color);

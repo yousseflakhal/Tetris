@@ -7,12 +7,12 @@ class InputHandler {
 public:
     InputHandler();
     void resetQuitRequested();
-    bool isKeyPressed(SDL_Keycode key) const;
-    bool isQuitRequested() const;
-    bool isKeyJustPressed(SDL_Keycode key) const;
-    int getMouseX() const;
-    int getMouseY() const;
-    bool isMouseClicked() const;
+    bool isKeyPressed(SDL_Keycode key) const noexcept;
+    bool isQuitRequested() const noexcept;
+    bool isKeyJustPressed(SDL_Keycode key) const noexcept;
+    int getMouseX() const noexcept;
+    int getMouseY() const noexcept;
+    bool isMouseClicked() const noexcept;
     void clearKeyState(SDL_Keycode key);
     void handleEvent(const SDL_Event &event);
     void beginFrame();

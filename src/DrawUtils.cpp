@@ -155,7 +155,7 @@ void draw_smooth_rounded_rect(SDL_Renderer* renderer,
     SDL_SetRenderDrawBlendMode(renderer, original_mode);
 }
 
-SDL_Color darker(SDL_Color c, float factor) {
+SDL_Color darker(SDL_Color c, float factor) noexcept {
     SDL_Color out;
     out.r = Uint8(c.r * factor);
     out.g = Uint8(c.g * factor);

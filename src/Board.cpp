@@ -53,7 +53,7 @@ void Board::initializeTexture(SDL_Renderer* renderer) const {
     SDL_SetRenderTarget(renderer, nullptr);
 }
 
-bool Board::isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const {
+bool Board::isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const noexcept {
     for (const auto& coord : coords) {
         int x = coord.first + dx;
         int y = coord.second + dy;
@@ -87,7 +87,7 @@ void Board::placeShape(const Shape& shape) {
     }
 }
 
-Uint8 Board::landingAlpha(int x, int y, Uint32 now) const {
+Uint8 Board::landingAlpha(int x, int y, Uint32 now) const noexcept {
     for (const auto& a : landingAnims) {
         if (a.x == x && a.y == y) {
             Uint32 t = now - a.startTime;
@@ -202,23 +202,23 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
     }
 
 
-int Board::getRows() const {
+int Board::getRows() const noexcept {
     return rows;
 }
 
-int Board::getCols() const {
+int Board::getCols() const noexcept {
     return cols;
 }
 
-int Board::getCellSize() const {
+int Board::getCellSize() const noexcept {
     return cellSize;
 }
 
-const std::vector<std::vector<int>>& Board::getGrid() const {
+const std::vector<std::vector<int>>& Board::getGrid() const noexcept {
     return grid;
 }
 
-const std::vector<int>& Board::getLinesToClear() const {
+const std::vector<int>& Board::getLinesToClear() const noexcept {
     return linesToClear;
 }
 
@@ -399,7 +399,7 @@ void Board::updateAnimations() {
     updateBubbleParticles();
 }
 
-bool Board::isCellReachable(int x, int y) const {
+bool Board::isCellReachable(int x, int y) const noexcept {
     if (y < 0) return true;
     
     for (int i = y - 1; i >= 0; i--) {
