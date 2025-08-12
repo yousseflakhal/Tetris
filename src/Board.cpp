@@ -1,10 +1,11 @@
 #include "Board.hpp"
 
 
-Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor)
+Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor, uint32_t seed)
     : rows(rows), cols(cols), cellSize(cellSize), backgroundColor(backgroundColor),
       grid(rows, std::vector<int>(cols, 0)),
-      colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0})) {}
+      colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0})),
+      rng(seed) {}
 
 Board::~Board() {
     if (whiteCellTexture) {
@@ -348,12 +349,16 @@ void Board::triggerHardDropAnim(const Shape& shape) {
         const int maxSpan = std::max(row, 1);
         const int denom   = maxSpan * 100;
 
-        for (int i = 0; i < 5; ++i) {
-            float fx = col + 0.5f;
-            float fy = (denom > 0 ? (rand() % denom) : 0) / 100.0f;
-            float vx = 0.0f;
-            float vy = -0.05f - ((rand() % 30) / 300.0f);
-            bubbleParticles.push_back({fx, fy, vx, vy, 255, now});
+        if (denom > 0) {
+            std::uniform_int_distribution<int> fyInt(0, denom - 1);
+            std::uniform_int_distribution<int> vyInt(0, 29);
+            for (int i = 0; i < 5; ++i) {
+                float fx = col + 0.5f;
+                float fy = fyInt(rng) / 100.0f;
+                float vx = 0.0f;
+                float vy = -0.05f - (vyInt(rng) / 300.0f);
+                bubbleParticles.push_back({fx, fy, vx, vy, 255, now});
+            }
         }
     }
 }

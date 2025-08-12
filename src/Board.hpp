@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <cmath>
+#include <random>
 
 #include "Shape.hpp"
 
@@ -45,7 +46,7 @@ public:
         Uint32      duration;
     };
 
-    Board(int rows, int cols, int cellSize, SDL_Color backgroundColor);
+    Board(int rows, int cols, int cellSize, SDL_Color backgroundColor, uint32_t seed = std::random_device{}());
     ~Board();
 
     void initializeTexture(SDL_Renderer* renderer) const;
@@ -95,6 +96,8 @@ private:
     std::vector<HardDropAnim>   hardDropAnims;
     std::vector<BubbleParticle> bubbleParticles;
     std::vector<ScorePopup>     scorePopups;
+
+    std::mt19937 rng;
 
     void triggerScorePopup(int clearedLines, int linePoints);
     void updateScorePopups();

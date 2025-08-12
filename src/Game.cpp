@@ -29,13 +29,14 @@ struct KeyHash {
 };
 }
 
-Game::Game(int windowWidth, int windowHeight, int cellSize)
-    : board(20, 10, cellSize, {0, 0, 255, 255}),
+Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32_t> seed)
+    : board(20, 10, cellSize, {0, 0, 255, 255}, seed.has_value() ? (*seed ^ 0x9E3779B9u) : std::random_device{}()),
       currentShape(Shape::Type::O, board.getCols() / 2, 0, {255, 255, 255, 255}),
       shadowShape(currentShape),
       cellSize(cellSize),
       windowWidth(windowWidth),
-      windowHeight(windowHeight) {
+      windowHeight(windowHeight),
+      rng(seed.has_value() ? std::mt19937(*seed) : std::mt19937(std::random_device{}())) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL Initialization failed");
 
@@ -84,8 +85,6 @@ Game::Game(int windowWidth, int windowHeight, int cellSize)
     if (!backgroundTexture) {
         throw std::runtime_error("Failed to load background image");
     }
-
-    srand(time(nullptr));
 
     FormUI::Init(fontDefault);
 
@@ -1069,7 +1068,8 @@ void Game::renderNextPieces() {
 void Game::spawnNewShape() {
     if (nextPieces.empty()) {
         for (int i = 0; i < 3; i++) {
-            Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
+            std::uniform_int_distribution<int> dist(0, 6);
+            Shape::Type newType = static_cast<Shape::Type>(dist(rng));
             nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
         }
     }
@@ -1081,8 +1081,11 @@ void Game::spawnNewShape() {
         return;
     }
 
-    Shape::Type newType = static_cast<Shape::Type>(rand() % 7);
-    nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
+    {
+        std::uniform_int_distribution<int> dist(0, 6);
+        Shape::Type newType = static_cast<Shape::Type>(dist(rng));
+        nextPieces.push_back(Shape(newType, board.getCols() / 2, 0, {255, 255, 255, 255}));
+    }
 
     canHold = true;
     lastMouseTargetGridX = std::numeric_limits<int>::min();

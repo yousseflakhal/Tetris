@@ -1,5 +1,4 @@
 #include "Shape.hpp"
-using namespace std;
 
 Shape::Shape(Type type, int startX, int startY, SDL_Color color)
     : rotationState(0), type(type), color(color){

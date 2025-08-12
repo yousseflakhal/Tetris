@@ -13,6 +13,7 @@
 #include <vector>
 #include <limits>
 #include <stdexcept>
+#include <random>
 
 #include "Board.hpp"
 #include "Shape.hpp"
@@ -36,7 +37,7 @@ public:
         Hold
     };
 
-    Game(int width, int height, int cellSize);
+    Game(int width, int height, int cellSize, std::optional<uint32_t> seed = std::nullopt);
     ~Game();
 
     void run();
@@ -231,4 +232,6 @@ private:
     }
 
     std::vector<ScorePopup> scorePopups;
+
+    std::mt19937 rng;
 };
