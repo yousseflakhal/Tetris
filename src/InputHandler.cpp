@@ -1,10 +1,12 @@
 #include "InputHandler.hpp"
 
 InputHandler::InputHandler() 
-    : keyStates{}, quitRequested(false), mouseX(0), mouseY(0), mouseClicked(false) {}
+    : keyStates{}, quitRequested(false), mouseX(0), mouseY(0),
+      leftMouseClicked(false), rightMouseClicked(false) {}
 
 void InputHandler::beginFrame() {
-    mouseClicked = false;
+    leftMouseClicked = false;
+    rightMouseClicked = false;
     keysJustPressed.clear();
 }
 void InputHandler::handleEvent(const SDL_Event &event) {
@@ -21,7 +23,9 @@ void InputHandler::handleEvent(const SDL_Event &event) {
         mouseY = event.motion.y;
     } else if (event.type == SDL_MOUSEBUTTONDOWN) {
         if (event.button.button == SDL_BUTTON_LEFT) {
-            mouseClicked = true;
+            leftMouseClicked = true;
+        } else if (event.button.button == SDL_BUTTON_RIGHT) {
+            rightMouseClicked = true;
         }
     } else if (event.type == SDL_QUIT) {
         quitRequested = true;
@@ -49,8 +53,11 @@ int InputHandler::getMouseY() const noexcept {
     return mouseY;
 }
 
-bool InputHandler::isMouseClicked() const noexcept {
-    return mouseClicked;
+bool InputHandler::isLeftMouseClicked() const noexcept { 
+    return leftMouseClicked;
+}
+bool InputHandler::isRightMouseClicked() const noexcept {
+    return rightMouseClicked;
 }
 
 void InputHandler::resetQuitRequested() {

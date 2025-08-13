@@ -12,7 +12,8 @@ public:
     bool isKeyJustPressed(SDL_Keycode key) const noexcept;
     int getMouseX() const noexcept;
     int getMouseY() const noexcept;
-    bool isMouseClicked() const noexcept;
+    bool isLeftMouseClicked() const noexcept;
+    bool isRightMouseClicked() const noexcept;
     void clearKeyState(SDL_Keycode key);
     void handleEvent(const SDL_Event &event);
     void beginFrame();
@@ -26,5 +27,6 @@ private:
     bool quitRequested;
     int mouseX;
     int mouseY;
-    bool mouseClicked;
+    bool leftMouseClicked;
+    bool rightMouseClicked;
 };

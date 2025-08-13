@@ -420,7 +420,7 @@ void Game::processInput() {
     }
 
     if (isGameOver()) {
-        if (inputHandler.isMouseClicked()) {
+        if (inputHandler.isLeftMouseClicked() || inputHandler.isRightMouseClicked()) {
             if (ignoreNextMouseClick) {
                 ignoreNextMouseClick = false;
             }
@@ -573,11 +573,18 @@ void Game::processInput() {
         return;
     }
 
-    if (mouseControlEnabled && inputHandler.isMouseClicked()) {
-        if (ignoreNextMouseClick) { ignoreNextMouseClick = false; return; }
-
-        performHardDrop();
-        return;
+    if (mouseControlEnabled) {
+        if (inputHandler.isRightMouseClicked()) {
+            if (ignoreNextMouseClick) { ignoreNextMouseClick = false; return; }
+            holdPiece();
+            if (soundEnabled) SoundManager::PlayHoldSound();
+            return;
+        }
+        if (inputHandler.isLeftMouseClicked()) {
+            if (ignoreNextMouseClick) { ignoreNextMouseClick = false; return; }
+            performHardDrop();
+            return;
+        }
     }
 
     if (currentScreen == Screen::Settings) {
