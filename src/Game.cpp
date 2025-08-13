@@ -312,6 +312,7 @@ void Game::run() {
 }
 
 void Game::processInput() {
+    mouseMovedThisFrame = false;
     if (soundEnabled != lastSoundEnabled) {
         if (soundEnabled) {
             SoundManager::Load();
@@ -339,6 +340,10 @@ void Game::processInput() {
     while (SDL_PollEvent(&e)) {
         inputHandler.handleEvent(e);
         FormUI::HandleEvent(e);
+
+        if (e.type == SDL_MOUSEMOTION) {
+            mouseMovedThisFrame = true;
+        }
 
         if (inputHandler.isQuitRequested()) {
             running = false;
@@ -517,7 +522,7 @@ void Game::processInput() {
             mouseX >= 0 && mouseX < board.getCols()*cellSize &&
             mouseY >= 0 && mouseY < board.getRows()*cellSize;
 
-        if (mouseControlEnabled && insideBoard) {
+        if (mouseControlEnabled && insideBoard && mouseMovedThisFrame) {
             int targetGridX = std::clamp(mouseX / cellSize, 0, board.getCols()-1);
             int targetGridY = std::clamp(mouseY / cellSize, 0, board.getRows()-1);
 
@@ -527,18 +532,15 @@ void Game::processInput() {
             const Uint32 intervalMs = 16;
             Uint32 now = SDL_GetTicks();
             if (now - lastAutoPlace >= intervalMs) {
-            if (!plannedMouseLock || !plannedCoversTarget) {
-                autoRotateCurrentShape(targetGridX, targetGridY);
+                if (!plannedMouseLock || !plannedCoversTarget) {
+                    autoRotateCurrentShape(targetGridX, targetGridY);
+                }
+                planMousePlacement(targetGridX, targetGridY);
+                if (plannedMouseLock && plannedCoversTarget) {
+                    alignToPlannedLock();
+                }
+                lastAutoPlace = now;
             }
-            
-            planMousePlacement(targetGridX, targetGridY);
-            
-            if (plannedMouseLock && plannedCoversTarget) {
-                alignToPlannedLock();
-            }
-            
-            lastAutoPlace = now;
-        }
         } else {
             plannedMouseLock.reset();
         }

@@ -202,6 +202,8 @@ private:
 
     std::optional<Shape> plannedMouseLock;
     bool                 plannedCoversTarget = false;
+    
+    bool mouseMovedThisFrame = false;
 
     std::vector<Shape> computeReachableLocks(const Shape& start) const;
     void               planMousePlacement(int targetGridX, int targetGridY);
