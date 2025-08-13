@@ -28,7 +28,7 @@ const std::vector<std::pair<int, int>>& Shape::getDefaultCoordsForType(Type type
         {Type::S, {{0, 0}, {-1, 0}, {0, 1}, {1, 1}}},
         {Type::Z, {{0, 0}, {1, 0}, {0, 1}, {-1, 1}}},
         {Type::L, {{-1, 1}, {-1, 0}, {-1, 2}, {0, 2}}},
-        {Type::J, {{0, 0}, {0, 1}, {0, 2}, {-1, 2}}},
+        {Type::J, {{0, 1}, {0, 0}, {0, 2}, {-1, 2}}},
         {Type::T, {{0, 0}, {-1, 1}, {0, 1}, {1, 1}}}
     };
     return coordsMap.at(type);
