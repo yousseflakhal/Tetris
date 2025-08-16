@@ -12,6 +12,10 @@ Board::~Board() {
         SDL_DestroyTexture(whiteCellTexture);
         whiteCellTexture = nullptr;
     }
+    if (gridBgTex) {
+        SDL_DestroyTexture(gridBgTex);
+        gridBgTex = nullptr;
+    }
 }
 
 void Board::initializeTexture(SDL_Renderer* renderer) {
@@ -121,7 +125,7 @@ int Board::clearFullLines() {
 }
 
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const {
-    const int boardWidth = cols * cellSize;
+    const int boardWidth  = cols * cellSize;
     const int boardHeight = rows * cellSize;
     const int gridGap = 1;
 
@@ -130,36 +134,43 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
         return false;
     };
 
-    draw_smooth_rounded_rect(renderer, offsetX, offsetY, boardWidth, boardHeight, 5, {50, 50, 50, 255}, true);
+    if (gridBgTex == nullptr) {
+        const_cast<Board*>(this)->rebuildGridBackground(renderer);
+    }
+    if (gridBgTex) {
+        SDL_Rect dst{ offsetX, offsetY, boardWidth, boardHeight };
+        SDL_RenderCopy(renderer, gridBgTex, nullptr, &dst);
+    }
+
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     for (int y = 0; y < rows; ++y) {
+        const bool isLineClearing = isClearingLines && isRowClearing(y);
         for (int x = 0; x < cols; ++x) {
+            const bool isFullCell = (grid[y][x] != 0);
+            if (!showPlacedBlocks || !isFullCell) continue;
+
             const int cellX = offsetX + x * cellSize + gridGap;
             const int cellY = offsetY + y * cellSize + gridGap;
             const int cellDrawSize = cellSize - 2 * gridGap;
-            bool isFullCell = grid[y][x] != 0;
-            bool isLineClearing = isClearingLines && isRowClearing(y);
-            draw_smooth_rounded_rect(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 2, {0, 0, 0, 255}, true);
 
-            if (showPlacedBlocks && isFullCell) {
+            if (isLineClearing) {
                 SDL_Color color = colorGrid[y][x];
-                if (isLineClearing) {
-                    Uint32 currentTime = SDL_GetTicks();
-                    float elapsed = static_cast<float>(currentTime - clearStartTime);
-                    float progress = std::min(elapsed / 500.0f, 1.0f);
-                    Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress));
-                    float rotation = 360.0f * progress;
-                    SDL_Rect destRect = {cellX, cellY, cellDrawSize, cellDrawSize};
+                Uint32 currentTime = SDL_GetTicks();
+                float elapsed = static_cast<float>(currentTime - clearStartTime);
+                float progress = std::min(elapsed / 500.0f, 1.0f);
+                Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress));
+                float rotation = 360.0f * progress;
+                SDL_Rect destRect = {cellX, cellY, cellDrawSize, cellDrawSize};
 
-                    SDL_SetTextureColorMod(whiteCellTexture, color.r, color.g, color.b);
-                    SDL_SetTextureAlphaMod(whiteCellTexture, alpha);
-                    SDL_RenderCopyEx(renderer, whiteCellTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
-                } else {
-                    SDL_Color borderColor = darker(color, 0.55f);
-                    draw_tetris_cell(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 6, 1, 2, color, borderColor);
-                    draw_smooth_parabolic_highlight_arc(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 1, 2);
-                }
+                SDL_SetTextureColorMod(whiteCellTexture, color.r, color.g, color.b);
+                SDL_SetTextureAlphaMod(whiteCellTexture, alpha);
+                SDL_RenderCopyEx(renderer, whiteCellTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
+            } else {
+                SDL_Color base = colorGrid[y][x];
+                SDL_Color border = darker(base, 0.55f);
+                draw_tetris_cell(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 6, 1, 2, base, border);
+                draw_smooth_parabolic_highlight_arc(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 1, 2);
             }
         }
     }
@@ -191,12 +202,12 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
         int px = offsetX + static_cast<int>(p.x * cellSize);
         int py = offsetY + static_cast<int>(p.y * cellSize);
         int radius = std::max(1, cellSize / 16);
-
         SDL_Color col{255, 255, 255, p.alpha};
         drawAACircle(renderer, px, py, radius, col);
     }
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-    }
+}
+
 
 
 int Board::getRows() const noexcept {
@@ -405,4 +416,60 @@ bool Board::isCellReachable(int x, int y) const noexcept {
         }
     }
     return true;
+}
+
+void Board::rebuildGridBackground(SDL_Renderer* renderer) {
+    if (gridBgTex) {
+        SDL_DestroyTexture(gridBgTex);
+        gridBgTex = nullptr;
+    }
+
+    const int boardWidth  = cols * cellSize;
+    const int boardHeight = rows * cellSize;
+    const int gridGap = 1;
+
+    gridBgTex = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        boardWidth,
+        boardHeight
+    );
+    if (!gridBgTex) {
+        SDL_Log("Failed to create gridBgTex: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_SetTextureBlendMode(gridBgTex, SDL_BLENDMODE_BLEND);
+
+    SDL_SetRenderTarget(renderer, gridBgTex);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+
+    draw_smooth_rounded_rect(
+        renderer,
+        0, 0,
+        boardWidth, boardHeight,
+        5,
+        SDL_Color{50, 50, 50, 255},
+        true
+    );
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const int cellX = x * cellSize + gridGap;
+            const int cellY = y * cellSize + gridGap;
+            const int cellDrawSize = cellSize - 2 * gridGap;
+            draw_smooth_rounded_rect(
+                renderer,
+                cellX, cellY,
+                cellDrawSize, cellDrawSize,
+                2,
+                SDL_Color{0, 0, 0, 255},
+                true
+            );
+        }
+    }
+
+    SDL_SetRenderTarget(renderer, nullptr);
 }

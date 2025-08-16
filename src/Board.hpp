@@ -66,6 +66,8 @@ public:
     void updateBubbleParticles();
     void triggerHardDropAnim(const Shape& shape);
 
+    void rebuildGridBackground(SDL_Renderer* renderer);
+
     int  getRows() const noexcept;
     int  getCols() const noexcept;
     int  getCellSize() const noexcept;
@@ -98,6 +100,8 @@ private:
     std::vector<ScorePopup>     scorePopups;
 
     std::mt19937 rng;
+
+    mutable SDL_Texture* gridBgTex = nullptr;
 
     void triggerScorePopup(int clearedLines, int linePoints);
     void updateScorePopups();

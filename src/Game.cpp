@@ -82,6 +82,7 @@ Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32
     }
     
     board.initializeTexture(renderer);
+    board.rebuildGridBackground(renderer);
 
     backgroundTexture = IMG_LoadTexture(renderer, "assets/background.png");
     if (!backgroundTexture) {
