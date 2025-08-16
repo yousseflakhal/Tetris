@@ -103,6 +103,13 @@ private:
 
     mutable SDL_Texture* gridBgTex = nullptr;
 
+    mutable std::unordered_map<uint32_t, SDL_Texture*> tileTexByColor{};
+    void clearTileTextures();
+    SDL_Texture* getTileTexture(SDL_Renderer* r, SDL_Color base) const;
+    static uint32_t packColor(SDL_Color c) noexcept {
+        return (uint32_t(c.r) << 24) | (uint32_t(c.g) << 16) | (uint32_t(c.b) << 8) | uint32_t(c.a);
+    }
+
     void triggerScorePopup(int clearedLines, int linePoints);
     void updateScorePopups();
     void renderScorePopups();

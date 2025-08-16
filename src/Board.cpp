@@ -8,14 +8,9 @@ Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor, uint32
       rng(seed) {}
 
 Board::~Board() {
-    if (whiteCellTexture) {
-        SDL_DestroyTexture(whiteCellTexture);
-        whiteCellTexture = nullptr;
-    }
-    if (gridBgTex) {
-        SDL_DestroyTexture(gridBgTex);
-        gridBgTex = nullptr;
-    }
+    if (whiteCellTexture) { SDL_DestroyTexture(whiteCellTexture); whiteCellTexture = nullptr; }
+    clearTileTextures();
+    if (gridBgTex) { SDL_DestroyTexture(gridBgTex); gridBgTex = nullptr; }
 }
 
 void Board::initializeTexture(SDL_Renderer* renderer) {
@@ -142,6 +137,7 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
         SDL_RenderCopy(renderer, gridBgTex, nullptr, &dst);
     }
 
+    Uint32 now = SDL_GetTicks();
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     for (int y = 0; y < rows; ++y) {
@@ -168,15 +164,29 @@ void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlac
                 SDL_RenderCopyEx(renderer, whiteCellTexture, nullptr, &destRect, rotation, nullptr, SDL_FLIP_NONE);
             } else {
                 SDL_Color base = colorGrid[y][x];
-                SDL_Color border = darker(base, 0.55f);
-                draw_tetris_cell(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 6, 1, 2, base, border);
-                draw_smooth_parabolic_highlight_arc(renderer, cellX, cellY, cellDrawSize, cellDrawSize, 1, 2);
+                SDL_Rect dst{ cellX, cellY, cellDrawSize, cellDrawSize };
+
+                SDL_Texture* tex = getTileTexture(renderer, base);
+                if (tex) SDL_RenderCopy(renderer, tex, nullptr, &dst);
+                Uint8 a = landingAlpha(x, y, now);
+                if (a < 255) {
+                    Uint8 glow = static_cast<Uint8>((255 - a) * 0.9f);
+
+                    SDL_Rect dst{ cellX, cellY, cellDrawSize, cellDrawSize };
+
+                    SDL_SetTextureColorMod(whiteCellTexture, 255, 255, 255);
+                    SDL_SetTextureAlphaMod(whiteCellTexture, glow);
+
+                    SDL_SetTextureBlendMode(whiteCellTexture, SDL_BLENDMODE_ADD);
+                    SDL_RenderCopy(renderer, whiteCellTexture, nullptr, &dst);
+                    SDL_SetTextureBlendMode(whiteCellTexture, SDL_BLENDMODE_BLEND);
+                }
             }
         }
     }
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
-    Uint32 now = SDL_GetTicks();
+    
     for (const auto& anim : hardDropAnims) {
         Uint32 elapsed = now - anim.startTime;
         if (elapsed > HARD_DROP_ANIM_DURATION) continue;
@@ -472,4 +482,41 @@ void Board::rebuildGridBackground(SDL_Renderer* renderer) {
     }
 
     SDL_SetRenderTarget(renderer, nullptr);
+}
+
+void Board::clearTileTextures() {
+    for (auto& kv : tileTexByColor) {
+        if (kv.second) SDL_DestroyTexture(kv.second);
+    }
+    tileTexByColor.clear();
+}
+
+SDL_Texture* Board::getTileTexture(SDL_Renderer* r, SDL_Color base) const {
+    uint32_t key = packColor(base);
+    if (auto it = tileTexByColor.find(key); it != tileTexByColor.end())
+        return it->second;
+
+    const int gridGap = 1;
+    const int w = cellSize - 2 * gridGap;
+    const int h = cellSize - 2 * gridGap;
+    if (w <= 0 || h <= 0) return nullptr;
+
+    SDL_Texture* tex = SDL_CreateTexture(r, SDL_PIXELFORMAT_RGBA8888,
+                                         SDL_TEXTUREACCESS_TARGET, w, h);
+    if (!tex) return nullptr;
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+
+    SDL_SetRenderTarget(r, tex);
+    SDL_SetRenderDrawColor(r, 0,0,0,0);
+    SDL_RenderClear(r);
+
+    SDL_Color border = darker(base, 0.55f);
+    draw_tetris_cell(r, 0, 0, w, h, 6, 1, 2,
+                     base, border);
+    draw_smooth_parabolic_highlight_arc(r, 0, 0, w, h, 1, 2);
+
+    SDL_SetRenderTarget(r, nullptr);
+
+    tileTexByColor.emplace(key, tex);
+    return tex;
 }
