@@ -14,7 +14,7 @@ Board::~Board() {
     }
 }
 
-void Board::initializeTexture(SDL_Renderer* renderer) const {
+void Board::initializeTexture(SDL_Renderer* renderer) {
     if (cellSize <= 2) return;
     if (whiteCellTexture) {
         SDL_DestroyTexture(whiteCellTexture);
@@ -121,9 +121,6 @@ int Board::clearFullLines() {
 }
 
 void Board::draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const {
-    if (!whiteCellTexture) {
-        initializeTexture(renderer);
-    }
     const int boardWidth = cols * cellSize;
     const int boardHeight = rows * cellSize;
     const int gridGap = 1;

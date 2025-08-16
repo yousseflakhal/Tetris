@@ -49,7 +49,7 @@ public:
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor, uint32_t seed = std::random_device{}());
     ~Board();
 
-    void initializeTexture(SDL_Renderer* renderer) const;
+    void initializeTexture(SDL_Renderer* renderer);
     void draw(SDL_Renderer* renderer, int offsetX, int offsetY, bool showPlacedBlocks) const;
 
     bool  isOccupied(const std::vector<std::pair<int, int>>& coords, int dx, int dy) const noexcept;

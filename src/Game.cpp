@@ -80,6 +80,8 @@ Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32
     if (!renderer) {
         throw std::runtime_error("Failed to create renderer");
     }
+    
+    board.initializeTexture(renderer);
 
     backgroundTexture = IMG_LoadTexture(renderer, "assets/background.png");
     if (!backgroundTexture) {
