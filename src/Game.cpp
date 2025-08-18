@@ -818,7 +818,7 @@ bool Game::isGameOver() const noexcept {
 
 
 void Game::autoRotateCurrentShape(int targetGridX, int targetGridY) {
-    if (!isCellReachable(targetGridX, targetGridY)) return;
+    // if (!isCellReachable(targetGridX, targetGridY)) return;
     constexpr int CONTACT_W  = 20;
     const int ANCHOR_W   = autoPlaceAnchorW;
     constexpr int STAB_W     = 15;
@@ -971,7 +971,7 @@ void Game::autoRotateCurrentShape(int targetGridX, int targetGridY) {
 
 
 void Game::snapShapeHorizontally(int targetX) {
-    if (isCellReachable(targetX, board.getRows() - 1)) {
+    {
         int minX = INT_MAX, maxX = INT_MIN;
         for (auto &c : currentShape.coords) {
             minX = std::min(minX, c.first);
