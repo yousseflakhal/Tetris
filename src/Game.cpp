@@ -532,11 +532,13 @@ void Game::processInput() {
             mouseX >= 0 && mouseX < board.getCols()*cellSize &&
             mouseY >= 0 && mouseY < board.getRows()*cellSize;
 
-        if (mouseControlEnabled && insideBoard && mouseMovedThisFrame) {
+        if (mouseControlEnabled && insideBoard) {
             int targetGridX = std::clamp(mouseX / cellSize, 0, board.getCols()-1);
             int targetGridY = std::clamp(mouseY / cellSize, 0, board.getRows()-1);
 
-            snapShapeHorizontally(targetGridX);
+            if (mouseMovedThisFrame) {
+                snapShapeHorizontally(targetGridX);
+            }
 
             static Uint32 lastAutoPlace = 0;
             const Uint32 intervalMs = 16;
@@ -615,6 +617,7 @@ void Game::processInput() {
 
 
 void Game::update() {
+    mouseMovedThisFrame = false;
     updateScorePopups();
     bool gameOver = isGameOver();
 
@@ -818,7 +821,6 @@ bool Game::isGameOver() const noexcept {
 
 
 void Game::autoRotateCurrentShape(int targetGridX, int targetGridY) {
-    // if (!isCellReachable(targetGridX, targetGridY)) return;
     constexpr int CONTACT_W  = 20;
     const int ANCHOR_W   = autoPlaceAnchorW;
     constexpr int STAB_W     = 15;
@@ -969,40 +971,34 @@ void Game::autoRotateCurrentShape(int targetGridX, int targetGridY) {
     currentShape = best;
 }
 
-
 void Game::snapShapeHorizontally(int targetX) {
-    {
-        int minX = INT_MAX, maxX = INT_MIN;
-        for (auto &c : currentShape.coords) {
-            minX = std::min(minX, c.first);
-            maxX = std::max(maxX, c.first);
-        }
+    int minX = INT_MAX, maxX = INT_MIN;
+    for (auto &c : currentShape.coords) {
+        minX = std::min(minX, c.first);
+        maxX = std::max(maxX, c.first);
+    }
+    const int leftBias = (currentShape.getType() == Shape::Type::O) ? 1 : 0;
+    int desiredMinX = std::clamp(targetX - leftBias, 0, board.getCols() - (maxX - minX + 1));
+    int dx = desiredMinX - minX;
 
-        const int leftBias = (currentShape.getType() == Shape::Type::O) ? 1 : 0;
-        int desiredMinX = std::clamp(targetX - leftBias, 0, board.getCols() - (maxX - minX + 1));
-        int dx = desiredMinX - minX;
+    if (std::abs(dx) <= mouseMagnetRadius) return;
 
-        if (std::abs(dx) <= mouseMagnetRadius) return;
+    mouseXAccumulator += dx * mouseFollowStrength;
 
-        mouseXAccumulator += dx * mouseFollowStrength;
+    int steps = static_cast<int>(std::floor(std::abs(mouseXAccumulator)));
+    if (steps <= 0) return;
 
-        int steps = static_cast<int>(std::floor(std::abs(mouseXAccumulator)));
-        if (steps <= 0) return;
-
-        int dir = (mouseXAccumulator > 0.0f) ? 1 : -1;
-        for (int i = 0; i < steps; ++i) {
-            if (!board.isOccupied(currentShape.getCoords(), dir, 0)) {
-                for (auto &c : currentShape.coords) c.first += dir;
-                mouseXAccumulator -= dir;
-            } else {
-                mouseXAccumulator = 0.0f;
-                break;
-            }
+    int dir = (mouseXAccumulator > 0.0f) ? 1 : -1;
+    for (int i = 0; i < steps; ++i) {
+        if (!board.isOccupied(currentShape.getCoords(), dir, 0)) {
+            for (auto &c : currentShape.coords) c.first += dir;
+            mouseXAccumulator -= dir;
+        } else {
+            mouseXAccumulator = 0.0f;
+            break;
         }
     }
 }
-
-
 
 void Game::renderNextPieces() {
     const int sidebarX = board.getCols() * cellSize + 300;
@@ -1656,25 +1652,22 @@ bool Game::shapeCoversCell(const Shape& s, int gx, int gy) noexcept {
 }
 
 std::vector<Shape> Game::computeReachableLocks(const Shape& start) const {
-    static std::unordered_map<Shape::Type, std::vector<Shape>> lockCache;
-    const auto type = start.getType();
-    auto it = lockCache.find(type);
-    if (it != lockCache.end()) {
-        return it->second;
-    }
-
     const auto& grid = board.getGrid();
     const int rows = board.getRows(), cols = board.getCols();
+
     std::vector<Shape> layer;
     layer.push_back(start);
+
     std::unordered_set<CoordsKey, KeyHash> globallySeen;
     globallySeen.insert(makeKey(start));
+
     std::vector<Shape> locks;
 
     while (!layer.empty()) {
         std::deque<Shape> q(layer.begin(), layer.end());
         std::unordered_set<CoordsKey, KeyHash> closureSeen;
         std::vector<Shape> closure;
+
         while (!q.empty()) {
             Shape s = q.front(); q.pop_front();
             CoordsKey k = makeKey(s);
@@ -1682,10 +1675,12 @@ std::vector<Shape> Game::computeReachableLocks(const Shape& start) const {
             closure.push_back(s);
 
             if (!board.isOccupied(s.getCoords(), -1, 0)) {
-                Shape t = s; t.moveLeft(); if (!closureSeen.count(makeKey(t))) q.push_back(t);
+                Shape t = s; t.moveLeft();
+                if (!closureSeen.count(makeKey(t))) q.push_back(t);
             }
             if (!board.isOccupied(s.getCoords(), +1, 0)) {
-                Shape t = s; t.moveRight(cols); if (!closureSeen.count(makeKey(t))) q.push_back(t);
+                Shape t = s; t.moveRight(cols);
+                if (!closureSeen.count(makeKey(t))) q.push_back(t);
             }
             {
                 Shape t = s; t.rotateClockwise(grid, cols, rows);
@@ -1713,10 +1708,9 @@ std::vector<Shape> Game::computeReachableLocks(const Shape& start) const {
         }
         layer.swap(nextLayer);
     }
-
-    lockCache[type] = locks;
     return locks;
 }
+
 
 int Game::scorePlacement(const Shape& locked, int targetGridX, int targetGridY) const {
     const int rows = board.getRows(), cols = board.getCols();
