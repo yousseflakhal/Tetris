@@ -5,7 +5,11 @@ Board::Board(int rows, int cols, int cellSize, SDL_Color backgroundColor, uint32
     : rows(rows), cols(cols), cellSize(cellSize), backgroundColor(backgroundColor),
       grid(rows, std::vector<int>(cols, 0)),
       colorGrid(rows, std::vector<SDL_Color>(cols, {0, 0, 0, 0})),
-      rng(seed) {}
+      rng(seed) {
+        hardDropAnims.reserve(64);
+        bubbleParticles.reserve(512);
+        landingAnims.reserve(128);
+      }
 
 Board::~Board() {
     if (whiteCellTexture) { SDL_DestroyTexture(whiteCellTexture); whiteCellTexture = nullptr; }
@@ -519,4 +523,22 @@ SDL_Texture* Board::getTileTexture(SDL_Renderer* r, SDL_Color base) const {
 
     tileTexByColor.emplace(key, tex);
     return tex;
+}
+
+void Board::prewarm(SDL_Renderer* r) {
+    initializeTexture(r);
+    rebuildGridBackground(r);
+
+    const SDL_Color pieceColors[] = {
+        {0,255,255,255},
+        {255,255,0,255},
+        {128,0,128,255},
+        {0,255,0,255},
+        {255,0,0,255},
+        {0,0,255,255},
+        {255,165,0,255}
+    };
+    for (auto c : pieceColors) {
+        (void)getTileTexture(r, c);
+    }
 }

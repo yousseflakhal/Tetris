@@ -76,13 +76,17 @@ Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
     if (!renderer) {
         throw std::runtime_error("Failed to create renderer");
     }
     
     board.initializeTexture(renderer);
     board.rebuildGridBackground(renderer);
+    board.prewarm(renderer);
+    warmupOnce();
+    scorePopups.reserve(16);
 
     backgroundTexture = IMG_LoadTexture(renderer, "assets/background.png");
     if (!backgroundTexture) {
@@ -269,6 +273,10 @@ Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32
     doneBtn->visible = false;
 
     spawnNewShape();
+    for (int i = 0; i < 7; ++i) {
+        Shape s(static_cast<Shape::Type>(i), board.getCols() / 2, 0, {255,255,255,255});
+        computeReachableLocks(s);
+    }
     resumeCountdownActive = true;
     countdownStartTime = SDL_GetTicks();
 }
@@ -310,7 +318,6 @@ void Game::run() {
         FormUI::Update();
         update();
         render();
-        SDL_Delay(16);  // Limit frame rate (~60 FPS)
     }
 }
 
@@ -1590,49 +1597,29 @@ void Game::renderTextCenteredScaled(const std::string& text, int cx, int cy,
     SDL_FreeSurface(surf);
 }
 
-void Game::triggerScorePopup(int clearedLines, int linePoints) {
-    if (clearedLines <= 0) return;
+void Game::triggerScorePopup(const std::string& msg, SDL_Color col, int cx, int cy) {
+    ScorePopup p;
+    p.text = msg;
+    p.color = col;
+    p.font  = fontMedium ? fontMedium : fontDefault;
+    p.start = SDL_GetTicks();
+    p.duration = 900;
+    p.x = float(cx);
+    p.y0 = float(cy);
+    p.rise = 40.f;
 
-    const int boardOffsetX = UI::BoardOffsetX;
-    const int boardOffsetY = UI::BoardOffsetY;
-    float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
-
-    float avgRow = 0.f;
-    const auto& rows = board.getLinesToClear();
-    if (!rows.empty()) {
-        for (int r : rows) avgRow += r;
-        avgRow /= rows.size();
+    SDL_Color shadowCol{0,0,0,160};
+    if (auto* s = TTF_RenderText_Blended(p.font, p.text.c_str(), p.color)) {
+        p.tex = SDL_CreateTextureFromSurface(renderer, s);
+        p.texW = s->w; p.texH = s->h;
+        SDL_FreeSurface(s);
     }
-    float cy = boardOffsetY + (avgRow + 0.5f) * board.getCellSize();
-
-    const Uint32 dur  = 800;
-    const float  rise = 40.f;
-
-    const int labelYOffset  = -12;
-    const int pointsYOffset = +6;
-
-    const SDL_Color white = {255, 255, 255, 255};
-    TTF_Font* scoreFont = (fontMedium ? fontMedium : fontDefault);
-
-    std::string label;
-    switch (clearedLines) {
-        case 1: label = "Single"; break;
-        case 2: label = "Double"; break;
-        case 3: label = "Triple"; break;
-        default: label = "Tetris"; break;
+    if (auto* s2 = TTF_RenderText_Blended(p.font, p.text.c_str(), shadowCol)) {
+        p.shadowTex = SDL_CreateTextureFromSurface(renderer, s2);
+        SDL_FreeSurface(s2);
     }
 
-    Uint32 now = SDL_GetTicks();
-
-    scorePopups.push_back(ScorePopup{
-        label, white, cx, cy + labelYOffset, rise, now, 0, dur, 1.0f, scoreFont
-    });
-
-    scorePopups.push_back(ScorePopup{
-        std::string("+") + std::to_string(linePoints),
-        white, cx, cy + pointsYOffset, rise, now, 60, dur, 1.0f, scoreFont
-    });
-
+    scorePopups.push_back(std::move(p));
 }
 
 
@@ -1648,56 +1635,14 @@ void Game::updateScorePopups() {
     );
 }
 
-void Game::renderScorePopups() {
-    if (scorePopups.empty()) return;
-
-    Uint32 now = SDL_GetTicks();
-    for (const auto& p : scorePopups) {
-        if (now < p.start + p.delay) continue;
-
-        float t = (now - (p.start + p.delay)) / float(p.duration);
-        t = clamp01(t);
-
-        float dy = p.rise * easeOutQuad(t);
-        float y  = p.y0 - dy;
-
-        float aIn  = clamp01(t / 0.12f);
-        float aOut = (t > 0.75f) ? clamp01(1.f - (t - 0.75f) / 0.25f) : 1.f;
-        Uint8 alpha = Uint8(255 * aIn * aOut);
-
-        TTF_Font* useFont = p.font ? p.font : (fontMedium ? fontMedium : fontDefault);
-        float sAnim = 0.92f + 0.08f * easeOutQuad(std::min(t / 0.2f, 1.f));
-        float s = sAnim;
-
-        if (p.text == "Level up!") s *= 1.3f;
-
-        SDL_Color col = p.color; 
-        col.a = alpha;
-        renderTextCenteredScaled(p.text, int(p.x), int(y), col, s, useFont);
-    }
-}
-
 void Game::triggerLevelUpPopup() {
-    const int boardOffsetX = UI::BoardOffsetX;
-    const int boardOffsetY = UI::BoardOffsetY;
+    const int cx = UI::BoardOffsetX + int(board.getCols() * board.getCellSize() * 0.5f);
+    const int cy = UI::BoardOffsetY + int(board.getCellSize() * 5.5f);
 
-    const float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
-    const float cy = boardOffsetY + board.getCellSize() * 5.5f;
-
-    TTF_Font* levelFont = (fontMedium ? fontMedium : fontDefault);
-
-    scorePopups.push_back(ScorePopup{
-        "Level up!",
-        SDL_Color{255,255,255,255},
-        cx,
-        cy,
-        80.0f,
-        SDL_GetTicks(),
-        0u,
-        1200u,
-        1.0f,
-        levelFont
-    });
+    triggerScorePopup("Level up!", SDL_Color{255,255,255,255}, cx, cy);
+    auto& p = scorePopups.back();
+    p.rise = 80.f;
+    p.duration = 1200u;
 }
 
 int Game::minYOf(const Shape& s) noexcept {
@@ -1711,15 +1656,19 @@ bool Game::shapeCoversCell(const Shape& s, int gx, int gy) noexcept {
 }
 
 std::vector<Shape> Game::computeReachableLocks(const Shape& start) const {
+    static std::unordered_map<Shape::Type, std::vector<Shape>> lockCache;
+    const auto type = start.getType();
+    auto it = lockCache.find(type);
+    if (it != lockCache.end()) {
+        return it->second;
+    }
+
     const auto& grid = board.getGrid();
     const int rows = board.getRows(), cols = board.getCols();
-
     std::vector<Shape> layer;
     layer.push_back(start);
-
     std::unordered_set<CoordsKey, KeyHash> globallySeen;
     globallySeen.insert(makeKey(start));
-
     std::vector<Shape> locks;
 
     while (!layer.empty()) {
@@ -1764,6 +1713,8 @@ std::vector<Shape> Game::computeReachableLocks(const Shape& start) const {
         }
         layer.swap(nextLayer);
     }
+
+    lockCache[type] = locks;
     return locks;
 }
 
@@ -1904,4 +1855,115 @@ void Game::performHardDrop() {
 
 bool Game::isCellReachable(int gridX, int gridY) const {
     return board.isCellReachable(gridX, gridY);
+}
+
+void Game::warmupOnce() {
+    if (didWarmup) return;
+
+    board.prewarm(renderer);
+
+    TTF_Font* f = (fontMedium ? fontMedium : fontDefault);
+    if (f) {
+        SDL_Color white{255,255,255,255};
+
+        const char* warmMsgs[] = {
+            "HOLD","NEXT","Score","Lines","Level",
+            "Single","Double","Triple","Tetris","Level up!"
+        };
+        for (auto s : warmMsgs) {
+            if (SDL_Surface* surf = TTF_RenderText_Blended(f, s, white)) {
+                if (SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf)) SDL_DestroyTexture(tex);
+                SDL_FreeSurface(surf);
+            }
+        }
+
+        const char* glyphSets[] = {"0123456789", "+-xX"};
+        for (auto s : glyphSets) {
+            if (SDL_Surface* surf = TTF_RenderText_Blended(f, s, white)) {
+                if (SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf)) SDL_DestroyTexture(tex);
+                SDL_FreeSurface(surf);
+            }
+        }
+    }
+
+    if (board.whiteCellTexture) {
+        SDL_SetTextureAlphaMod(board.whiteCellTexture, 0);
+        SDL_Rect tiny{0,0,8,8};
+        SDL_RenderCopyEx(renderer, board.whiteCellTexture, nullptr, &tiny, 45.0, nullptr, SDL_FLIP_NONE);
+        SDL_SetTextureAlphaMod(board.whiteCellTexture, 255);
+    }
+
+    didWarmup = true;
+}
+
+
+void Game::triggerScorePopup(int clearedLines, int linePoints) {
+    if (clearedLines <= 0) return;
+
+    const int boardOffsetX = UI::BoardOffsetX;
+    const int boardOffsetY = UI::BoardOffsetY;
+
+    const float cx = boardOffsetX + board.getCols() * board.getCellSize() * 0.5f;
+
+    float avgRow = 0.f;
+    const auto& rows = board.getLinesToClear();
+    if (!rows.empty()) {
+        for (int r : rows) avgRow += r;
+        avgRow /= rows.size();
+    }
+    const float cy = boardOffsetY + (avgRow + 0.5f) * board.getCellSize();
+
+    const int labelYOffset  = -12;
+    const int pointsYOffset = +6;
+
+    std::string label;
+    switch (clearedLines) {
+        case 1: label = "Single"; break;
+        case 2: label = "Double"; break;
+        case 3: label = "Triple"; break;
+        default: label = "Tetris"; break;
+    }
+
+    const SDL_Color white{255,255,255,255};
+
+    triggerScorePopup(label, white, int(cx), int(cy) + labelYOffset);
+    triggerScorePopup(std::string("+") + std::to_string(linePoints), white,
+                      int(cx), int(cy) + pointsYOffset);
+}
+
+
+void Game::renderScorePopups() {
+    const Uint32 now = SDL_GetTicks();
+    if (scorePopups.empty()) return;
+
+    for (auto& p : scorePopups) {
+        const Uint32 elapsed = now - p.start;
+        if (elapsed > p.duration) continue;
+
+        const float t = elapsed / float(p.duration);
+        const float y = p.y0 - p.rise * t;
+        const float s = p.scale;
+        const int   w = int(p.texW * s), h = int(p.texH * s);
+
+        Uint8 alpha = 255;
+        if (t > 0.7f) alpha = Uint8(255 * (1.f - (t - 0.7f) / 0.3f));
+
+        SDL_Rect dst{ int(p.x) - w/2, int(y) - h/2, w, h };
+
+        if (p.shadowTex) {
+            SDL_Rect sh = dst; sh.x += 4; sh.y += 4;
+            SDL_SetTextureAlphaMod(p.shadowTex, alpha);
+            SDL_RenderCopy(renderer, p.shadowTex, nullptr, &sh);
+        }
+        if (p.tex) {
+            SDL_SetTextureAlphaMod(p.tex, alpha);
+            SDL_RenderCopy(renderer, p.tex, nullptr, &dst);
+        }
+    }
+
+    scorePopups.erase(
+        std::remove_if(scorePopups.begin(), scorePopups.end(),
+            [&](ScorePopup& p){ return (now - p.start) > p.duration; }),
+        scorePopups.end()
+    );
 }

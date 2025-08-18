@@ -6,6 +6,8 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <unordered_map>
+#include <cstdint>
 
 #include "Shape.hpp"
 
@@ -35,17 +37,6 @@ public:
         Uint32 startTime;
     };
 
-    struct ScorePopup {
-        std::string text;
-        SDL_Color   color;
-        float       x;
-        float       y0;
-        float       rise;
-        Uint32      start;
-        Uint32      delay;
-        Uint32      duration;
-    };
-
     Board(int rows, int cols, int cellSize, SDL_Color backgroundColor, uint32_t seed = std::random_device{}());
     ~Board();
 
@@ -67,6 +58,8 @@ public:
     void triggerHardDropAnim(const Shape& shape);
 
     void rebuildGridBackground(SDL_Renderer* renderer);
+
+    void prewarm(SDL_Renderer* r);
 
     int  getRows() const noexcept;
     int  getCols() const noexcept;
@@ -97,7 +90,6 @@ private:
 
     std::vector<HardDropAnim>   hardDropAnims;
     std::vector<BubbleParticle> bubbleParticles;
-    std::vector<ScorePopup>     scorePopups;
 
     std::mt19937 rng;
 
@@ -109,10 +101,6 @@ private:
     static uint32_t packColor(SDL_Color c) noexcept {
         return (uint32_t(c.r) << 24) | (uint32_t(c.g) << 16) | (uint32_t(c.b) << 8) | uint32_t(c.a);
     }
-
-    void triggerScorePopup(int clearedLines, int linePoints);
-    void updateScorePopups();
-    void renderScorePopups();
 
     static float easeOutCubic(float t) {
         return 1.0f - std::pow(1.0f - t, 3.0f);

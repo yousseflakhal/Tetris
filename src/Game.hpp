@@ -25,6 +25,45 @@ class UILabel;
 class UIButton;
 class UICheckbox;
 
+struct ScorePopup {
+    std::string text;
+    SDL_Color   color{255,255,255,255};
+    float       x = 0.f, y0 = 0.f, rise = 40.f;
+    Uint32      start = 0, delay = 0, duration = 900;
+    float       scale = 1.0f;
+    TTF_Font*   font = nullptr;
+
+    SDL_Texture* tex = nullptr;
+    SDL_Texture* shadowTex = nullptr;
+    int texW = 0, texH = 0;
+
+    ScorePopup() = default;
+    ~ScorePopup() {
+        if (tex) SDL_DestroyTexture(tex);
+        if (shadowTex) SDL_DestroyTexture(shadowTex);
+    }
+    ScorePopup(const ScorePopup&) = delete;
+    ScorePopup& operator=(const ScorePopup&) = delete;
+    ScorePopup(ScorePopup&& o) noexcept
+    : text(std::move(o.text)), color(o.color), x(o.x), y0(o.y0), rise(o.rise),
+        start(o.start), delay(o.delay), duration(o.duration), scale(o.scale),
+        font(o.font), tex(o.tex), shadowTex(o.shadowTex), texW(o.texW), texH(o.texH) {
+        o.tex = nullptr; o.shadowTex = nullptr;
+    }
+    ScorePopup& operator=(ScorePopup&& o) noexcept {
+        if (this != &o) {
+            if (tex) SDL_DestroyTexture(tex);
+            if (shadowTex) SDL_DestroyTexture(shadowTex);
+            text = std::move(o.text);
+            color = o.color; x = o.x; y0 = o.y0; rise = o.rise;
+            start = o.start; delay = o.delay; duration = o.duration; scale = o.scale;
+            font = o.font; tex = o.tex; shadowTex = o.shadowTex; texW = o.texW; texH = o.texH;
+            o.tex = nullptr; o.shadowTex = nullptr;
+        }
+        return *this;
+    }
+};
+
 class Game {
 public:
     enum class Action {
@@ -44,19 +83,6 @@ public:
 
 private:
     enum class Screen { Main, Settings };
-
-    struct ScorePopup {
-        std::string text;
-        SDL_Color   color;
-        float       x;
-        float       y0;
-        float       rise;
-        Uint32      start;
-        Uint32      delay;
-        Uint32      duration;
-        float       scale = 1.0f;
-        TTF_Font*   font  = nullptr;
-    };
 
     struct UI {
         static constexpr int BoardOffsetX = 200;
@@ -92,6 +118,9 @@ private:
     void   holdPiece();
     Uint32 getElapsedGameTime() const noexcept;
 
+    bool didWarmup = false;
+    void warmupOnce();
+
     float       countdownScale(Uint32 msInSecond) const noexcept;
     static float easeOutCubic(float t) noexcept;
     static float easeInOutQuad(float t) noexcept;
@@ -100,6 +129,8 @@ private:
     void triggerLevelUpPopup();
     void updateScorePopups();
     void renderScorePopups();
+
+    void triggerScorePopup(const std::string& msg, SDL_Color col, int cx, int cy);
 
     SDL_Window*   window            = nullptr;
     SDL_Renderer* renderer          = nullptr;
@@ -141,6 +172,8 @@ private:
     Uint32 totalPausedTime   = 0;
     Uint32 pauseStartTime    = 0;
     Uint32 countdownStartTime= 0;
+
+    std::vector<ScorePopup> scorePopups;
 
     bool   running                    = true;
     bool   ignoreNextMouseClick       = false;
@@ -232,8 +265,5 @@ private:
             return sOver + (sEnd - sOver) * easeInOutQuad(p);
         }
     }
-
-    std::vector<ScorePopup> scorePopups;
-
     std::mt19937 rng;
 };
