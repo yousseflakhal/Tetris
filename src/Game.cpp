@@ -148,9 +148,14 @@ Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32
         150,
         300,
         30,
-        &mouseControlEnabled,
+        mouseControlEnabled,
         fontSmall
     );
+    mouseControlCheckbox->setTextColor({255,255,255,255})
+    ->setBoxBackground({20, 25, 51, 180})
+    ->setCheckedColor({255,255,255,255})
+    ->setBorderThickness(1)
+    ->setBorderColor({255,255,255,255});
     mouseControlCheckbox->visible = false;
 
     soundEnabled = false;
@@ -161,9 +166,14 @@ Game::Game(int windowWidth, int windowHeight, int cellSize, std::optional<uint32
         200,
         300,
         30,
-        &soundEnabled,
+        soundEnabled,
         fontSmall
     );
+    soundCheckbox->setTextColor({255,255,255,255})
+    ->setBoxBackground({20, 25, 51, 180})
+    ->setCheckedColor({255,255,255,255})
+    ->setBorderThickness(1)
+    ->setBorderColor({255,255,255,255});
     soundCheckbox->visible = false;
 
     gameOverNewGameBtn = FormUI::Button(
